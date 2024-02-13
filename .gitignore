@@ -1,0 +1,5 @@
+.idea
+.venv
+logs
+
+client_secret.txt
