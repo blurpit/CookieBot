@@ -1,10 +1,15 @@
+import asyncio
+import math
 import random
 
 import discord as d
 
+from database import Database
 
 GUILD = d.Object(id=913924123405729812)
-cookie_quotes = [
+COOKIE_COOLDOWN = 10
+COOKIE_RANGE = (1, 100)
+COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",
     # "Om nom nom nom.",
     "Home is here heart is. Heart where cookie is. Math clear: home is cookie.",
@@ -42,6 +47,7 @@ class CookieBot(d.Client):
     def __init__(self, *, intents: d.Intents):
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
+        self.db = Database('data/db.json')
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
@@ -55,29 +61,65 @@ intents = d.Intents.default()
 intents.message_content = True
 intents.members = True
 
-client = CookieBot(intents=intents)
+bot = CookieBot(intents=intents)
 
 class CookieClicker(d.ui.View):
-    @d.ui.button(label='Cookie!', style=d.ButtonStyle.red, emoji='🍪')
+    @d.ui.button(label='Cookie!', style=d.ButtonStyle.grey, emoji='🍪')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
-        quote = random.choice(cookie_quotes)
-        num = random.randint(1, 100)
-        await interaction.response.send_message(
-            f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
-        )
+        async with bot.db:
+            cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
+            if cooldown > 0:
+                msg = f"Me sorry! All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
+                ephemeral = True
+            else:
+                # button.disabled = True
+                quote = random.choice(COOKIE_QUOTES)
+                num = random.randint(*COOKIE_RANGE)
 
-@client.tree.command()
+                user_id = interaction.user.id
+                bot.db.update_cookie_count(user_id, bot.db.get_cookie_count(user_id) + num)
+                bot.db.update_last_clicked()
+                msg = f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
+                ephemeral = False
+
+        await interaction.response.send_message(msg, ephemeral=ephemeral)
+
+
+@bot.tree.command()
 async def hello(interaction: d.Interaction):
     """ Wake up babe its time for another april fools bot """
     await interaction.response.send_message(f'Hi, {interaction.user.mention}')
 
-@client.tree.command()
+@bot.tree.command()
 async def cookie(interaction: d.Interaction):
     """ create cookie clicker message """
     view = CookieClicker()
     await interaction.response.send_message('CLICK FOR COOKIE!!!', view=view)
 
+@bot.tree.command()
+async def jar(interaction: d.Interaction):
+    """ how many cookies in your jar """
+    async with bot.db:
+        cookies = bot.db.get_cookie_count(interaction.user.id)
+
+    if cookies == 0:
+        msg = f"{interaction.user.mention} no have any cookie!"
+    elif cookies < 500:
+        msg = f"{interaction.user.mention} has {cookies} cookies! not many cookie but better than no cookie!!"
+    else:
+        msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
+    await interaction.response.send_message(msg)
+
+def time_str(seconds):
+    seconds = math.ceil(seconds)
+    if seconds > 3600:
+        return f'{seconds // 3600} hour'
+    elif seconds > 60:
+        return f'{seconds // 60} minute'
+    else:
+        return f'{seconds} second'
+
 
 if __name__ == '__main__':
     with open('client_secret.txt') as file:
-        client.run(file.read().strip())
+        bot.run(file.read().strip())
