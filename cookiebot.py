@@ -44,10 +44,15 @@ COOKIE_QUOTES = [
 ]
 
 class CookieBot(d.Client):
-    def __init__(self, *, intents: d.Intents):
+    def __init__(self):
+        self.db = Database('data/db.json')
+
+        intents = d.Intents.default()
+        intents.message_content = True
+        intents.members = True
+
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
-        self.db = Database('data/db.json')
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
@@ -57,14 +62,18 @@ class CookieBot(d.Client):
         await self.tree.sync(guild=GUILD)
         print('Commands synced.')
 
-intents = d.Intents.default()
-intents.message_content = True
-intents.members = True
+        async with self.db:
+            clicker_msg_id = self.db.get_clicker_message_id()
+            self.add_view(CookieClicker(), message_id=clicker_msg_id)
+            print(f'Added persistent clicker view for message {clicker_msg_id}')
 
-bot = CookieBot(intents=intents)
+bot = CookieBot()
 
 class CookieClicker(d.ui.View):
-    @d.ui.button(label='Cookie!', style=d.ButtonStyle.grey, emoji='🍪')
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @d.ui.button(label='Cookie!', style=d.ButtonStyle.grey, emoji='🍪', custom_id='cookie-btn')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
@@ -95,6 +104,9 @@ async def cookie(interaction: d.Interaction):
     """ create cookie clicker message """
     view = CookieClicker()
     await interaction.response.send_message('CLICK FOR COOKIE!!!', view=view)
+    msg: d.Message = await interaction.original_response()
+    async with bot.db:
+        bot.db.set_clicker_message_id(msg.id)
 
 @bot.tree.command()
 async def jar(interaction: d.Interaction):
@@ -122,4 +134,5 @@ def time_str(seconds):
 
 if __name__ == '__main__':
     with open('client_secret.txt') as file:
-        bot.run(file.read().strip())
+        token = file.read().strip()
+    bot.run(token)

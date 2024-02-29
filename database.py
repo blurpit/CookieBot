@@ -33,8 +33,16 @@ class Database:
     def load(self):
         with open(self._filepath, 'r') as f:
             self._data = json.loads(f.read() or '{}')
+
         self._data.setdefault('cookies', {})
         self._data.setdefault('last_clicked', _1970)
+        self._data.setdefault('clicker_message_id', None)
+
+    def get_clicker_message_id(self) -> int:
+        return self._data['clicker_message_id']
+
+    def set_clicker_message_id(self, message_id: int):
+        self._data['clicker_message_id'] = message_id
 
     def get_cookie_count(self, user_id: int) -> int:
         return self._data['cookies'].get(str(user_id), 0)
