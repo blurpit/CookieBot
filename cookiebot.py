@@ -86,7 +86,7 @@ class CookieClicker(d.ui.View):
                 num = random.randint(*COOKIE_RANGE)
 
                 user_id = interaction.user.id
-                bot.db.update_cookie_count(user_id, bot.db.get_cookie_count(user_id) + num)
+                bot.db.add_clicked_cookies(user_id, num)
                 bot.db.update_last_clicked()
                 msg = f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
                 ephemeral = False
@@ -112,7 +112,7 @@ async def cookie(interaction: d.Interaction):
 async def jar(interaction: d.Interaction):
     """ how many cookies in your jar """
     async with bot.db:
-        cookies = bot.db.get_cookie_count(interaction.user.id)
+        cookies = bot.db.get_clicked_cookies(interaction.user.id)
 
     if cookies == 0:
         msg = f"{interaction.user.mention} no have any cookie!"
