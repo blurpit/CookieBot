@@ -93,6 +93,29 @@ class CookieClicker(d.ui.View):
 
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
+async def make_leaderboard_embed():
+    async with bot.db:
+        embed = d.Embed(color=d.Color.blue())
+        embed.set_footer(text='⬇️ CLICK FOR COOKIE!! ⬇️')
+
+        entries = []
+        for user_id in bot.db.get_participants_user_ids():
+            user = bot.get_user(user_id)
+            cookies = bot.db.get_clicked_cookies(user_id)
+            entries.append((cookies, user.display_name))
+        entries.sort(reverse=True)
+
+        for i, (cookies, name) in enumerate(entries[:25], 1):
+            if i == 1:
+                name = '🥇' + name
+            elif i == 2:
+                name = '🥈' + name
+            elif i == 3:
+                name = '🥉' + name
+            embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
+
+        return embed
+
 
 @bot.tree.command()
 async def hello(interaction: d.Interaction):
@@ -103,7 +126,8 @@ async def hello(interaction: d.Interaction):
 async def cookie(interaction: d.Interaction):
     """ create cookie clicker message """
     view = CookieClicker()
-    await interaction.response.send_message('CLICK FOR COOKIE!!!', view=view)
+    embed = await make_leaderboard_embed()
+    await interaction.response.send_message(view=view, embed=embed)
     msg: d.Message = await interaction.original_response()
     async with bot.db:
         bot.db.set_clicker_message_id(msg.id)

@@ -1,6 +1,7 @@
 import asyncio
 import json
 from datetime import datetime
+from typing import Set
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -51,6 +52,9 @@ class Database:
         if str(user_id) not in self._data['clicked_cookies']:
             self._data['clicked_cookies'] = 0
         self._data['clicked_cookies'][str(user_id)] += cookies
+
+    def get_participants_user_ids(self) -> Set[int]:
+        return set(map(int, self._data['clicked_cookies'].keys()))
 
     def get_last_clicked(self) -> datetime:
         return datetime.fromisoformat(self._data['last_clicked'])
