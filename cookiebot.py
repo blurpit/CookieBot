@@ -7,8 +7,8 @@ from database import Database
 from util import *
 
 GUILD = d.Object(id=913924123405729812)
-LEADERBOARD_UPDATE_RATE = 10
-COOKIE_COOLDOWN = 10
+UPDATE_RATE = 10
+COOKIE_COOLDOWN = 20
 COOKIE_RANGE = (1, 100)
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",
@@ -54,6 +54,7 @@ class CookieBot(d.Client):
 
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
+        self.prev_cookie_count = -1
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
@@ -90,10 +91,12 @@ class CookieBot(d.Client):
                 self.cookie_updater.start()
                 print(f'Initialized cookie message {msg_id}')
 
-    @tasks.loop(seconds=LEADERBOARD_UPDATE_RATE)
+    @tasks.loop(seconds=UPDATE_RATE)
     async def cookie_updater(self):
         print('Updating clicker')
-        await self.message.edit(**await make_clicker_message())
+        msg = await  make_clicker_message()
+        if msg is not None:
+            await self.message.edit(**msg)
 
     @cookie_updater.before_loop
     async def before_cookie_updater(self):
@@ -118,8 +121,8 @@ class CookieClicker(d.ui.View):
             if cooldown > 0:
                 msg = f"All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
                 ephemeral = True
+                print(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
             else:
-                # button.disabled = True
                 quote = random.choice(COOKIE_QUOTES)
                 num = random.randint(*COOKIE_RANGE)
 
@@ -128,18 +131,26 @@ class CookieClicker(d.ui.View):
                 bot.db.update_last_clicked()
                 bot.db.set_last_clicked_user_id(user_id)
                 bot.db.set_last_clicked_value(num)
+                print(f'Click! {interaction.user.name} got {num} cookies')
 
-                msg = f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
-                ephemeral = False
+                msg = f'{quote}\nYou got {num} cookie! Om nom nom nom'
+                ephemeral = True
 
         button.disabled = True
         bot.cookie_updater.restart()
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
-async def make_clicker_message() -> dict:
+async def make_clicker_message() -> dict | None:
     async with bot.db:
-        # Total cookie count
-        content = '# 🍪 ' + str(bot.db.get_total_cookies())
+        # Don't update the message if the cookie count hasn't changed
+        total_cookies = bot.db.get_total_cookies()
+        if total_cookies == bot.prev_cookie_count:
+            print('Skipping update (cookie count has not changed)')
+            return None
+        bot.prev_cookie_count = total_cookies
+
+        # Total cookie count display
+        content = f'# 🍪 {total_cookies}'
 
         # Last clicked
         last_clicked_user_id = bot.db.get_last_clicked_user_id()
@@ -157,6 +168,7 @@ async def make_clicker_message() -> dict:
 
         # Leaderboard embed
         embed = d.Embed(color=d.Color.blue())
+        embed.set_footer(text=f'updates every {short_time_str(UPDATE_RATE)}')
 
         entries = []
         for user_id in bot.db.get_participants_user_ids():
@@ -191,6 +203,7 @@ async def hello(interaction: d.Interaction):
 @bot.tree.command()
 async def cookie(interaction: d.Interaction):
     """ create cookie clicker message """
+    bot.prev_cookie_count = -1 # force update
     await interaction.response.send_message(**await make_clicker_message())
     msg: d.Message = await interaction.original_response()
     await bot.set_clicker_message(msg)
