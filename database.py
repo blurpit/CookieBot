@@ -53,6 +53,12 @@ class Database:
     def set_clicker_channel_id(self, channel_id: int):
         self._data['clicker_channel_id'] = channel_id
 
+    def get_cookies(self, user_id: int) -> int:
+        return self.get_clicked_cookies(user_id)
+
+    def get_total_cookies(self) -> int:
+        return sum(self.get_cookies(user_id) for user_id in self.get_participants_user_ids())
+
     def get_clicked_cookies(self, user_id: int) -> int:
         return self._data['clicked_cookies'].get(str(user_id), 0)
 

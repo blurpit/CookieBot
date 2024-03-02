@@ -54,7 +54,6 @@ class CookieBot(d.Client):
 
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
-        self.counter = 0
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
@@ -93,8 +92,7 @@ class CookieBot(d.Client):
 
     @tasks.loop(seconds=LEADERBOARD_UPDATE_RATE)
     async def cookie_updater(self):
-        self.counter += 1
-        print(self.counter)
+        print('Updating clicker')
         await self.message.edit(**await make_clicker_message())
 
     @cookie_updater.before_loop
@@ -134,27 +132,25 @@ class CookieClicker(d.ui.View):
 
 async def make_clicker_message() -> dict:
     async with bot.db:
-        content = '# ' + str(bot.counter)
-        view = d.utils.MISSING
-        embed = d.utils.MISSING
-        # embed = d.Embed(color=d.Color.blue())
-        # # embed.set_footer(text='⬇️ CLICK FOR COOKIE!! ⬇️')
-        #
-        # entries = []
-        # for user_id in bot.db.get_participants_user_ids():
-        #     user = bot.get_user(user_id)
-        #     cookies = bot.db.get_clicked_cookies(user_id)
-        #     entries.append((cookies, user.display_name))
-        # entries.sort(reverse=True)
-        #
-        # for i, (cookies, name) in enumerate(entries[:25], 1):
-        #     if i == 1:
-        #         name = '🥇' + name
-        #     elif i == 2:
-        #         name = '🥈' + name
-        #     elif i == 3:
-        #         name = '🥉' + name
-        #     embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
+        content = '# 🍪 ' + str(bot.db.get_total_cookies())
+        view = CookieClicker()
+        embed = d.Embed(color=d.Color.blue())
+
+        entries = []
+        for user_id in bot.db.get_participants_user_ids():
+            user = bot.get_user(user_id)
+            cookies = bot.db.get_clicked_cookies(user_id)
+            entries.append((cookies, user.display_name))
+        entries.sort(reverse=True)
+
+        for i, (cookies, name) in enumerate(entries[:25], 1):
+            if i == 1:
+                name = '🥇' + name
+            elif i == 2:
+                name = '🥈' + name
+            elif i == 3:
+                name = '🥉' + name
+            embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
 
         return dict(
             content=content,
