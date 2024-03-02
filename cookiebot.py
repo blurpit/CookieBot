@@ -1,12 +1,13 @@
-import asyncio
 import math
 import random
 
 import discord as d
+from discord.ext import tasks
 
 from database import Database
 
 GUILD = d.Object(id=913924123405729812)
+LEADERBOARD_UPDATE_RATE = 5
 COOKIE_COOLDOWN = 10
 COOKIE_RANGE = (1, 100)
 COOKIE_QUOTES = [
@@ -48,14 +49,16 @@ class CookieBot(d.Client):
         self.db = Database('data/db.json')
 
         intents = d.Intents.default()
-        intents.message_content = True
+        # intents.message_content = True
         intents.members = True
 
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
+        self.counter = 0
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
+        await self.init_clicker_message()
 
     async def setup_hook(self):
         self.tree.copy_global_to(guild=GUILD)
@@ -66,6 +69,42 @@ class CookieBot(d.Client):
             clicker_msg_id = self.db.get_clicker_message_id()
             self.add_view(CookieClicker(), message_id=clicker_msg_id)
             print(f'Added persistent clicker view for message {clicker_msg_id}')
+
+    async def set_clicker_message(self, msg: d.Message):
+        async with self.db:
+            self.db.set_clicker_message_id(msg.id)
+            self.db.set_clicker_channel_id(msg.channel.id)
+
+            self.message = msg
+            if not self.cookie_updater.is_running():
+                self.cookie_updater.start()
+
+            print(f'Updated cookie message to {msg.id}')
+
+    async def init_clicker_message(self):
+        async with self.db:
+            channel_id = self.db.get_clicker_channel_id()
+            msg_id = self.db.get_clicker_message_id()
+            if msg_id is not None:
+                channel = bot.get_channel(channel_id)
+                self.message = await channel.fetch_message(msg_id)
+                self.cookie_updater.start()
+                print(f'Initialized cookie message {msg_id}')
+
+    @tasks.loop(seconds=LEADERBOARD_UPDATE_RATE)
+    async def cookie_updater(self):
+        self.counter += 1
+        print(self.counter)
+        await self.message.edit(**await make_clicker_message())
+
+    @cookie_updater.before_loop
+    async def before_cookie_updater(self):
+        await self.wait_until_ready()
+        print('Cookie updater started.')
+
+    @cookie_updater.after_loop
+    async def after_cookie_updater(self):
+        print('Cookie updater stopped.')
 
 bot = CookieBot()
 
@@ -78,7 +117,7 @@ class CookieClicker(d.ui.View):
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
             if cooldown > 0:
-                msg = f"Me sorry! All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
+                msg = f"All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
                 ephemeral = True
             else:
                 # button.disabled = True
@@ -93,28 +132,35 @@ class CookieClicker(d.ui.View):
 
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
-async def make_leaderboard_embed():
+async def make_clicker_message() -> dict:
     async with bot.db:
-        embed = d.Embed(color=d.Color.blue())
-        embed.set_footer(text='⬇️ CLICK FOR COOKIE!! ⬇️')
+        content = '# ' + str(bot.counter)
+        view = d.utils.MISSING
+        embed = d.utils.MISSING
+        # embed = d.Embed(color=d.Color.blue())
+        # # embed.set_footer(text='⬇️ CLICK FOR COOKIE!! ⬇️')
+        #
+        # entries = []
+        # for user_id in bot.db.get_participants_user_ids():
+        #     user = bot.get_user(user_id)
+        #     cookies = bot.db.get_clicked_cookies(user_id)
+        #     entries.append((cookies, user.display_name))
+        # entries.sort(reverse=True)
+        #
+        # for i, (cookies, name) in enumerate(entries[:25], 1):
+        #     if i == 1:
+        #         name = '🥇' + name
+        #     elif i == 2:
+        #         name = '🥈' + name
+        #     elif i == 3:
+        #         name = '🥉' + name
+        #     embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
 
-        entries = []
-        for user_id in bot.db.get_participants_user_ids():
-            user = bot.get_user(user_id)
-            cookies = bot.db.get_clicked_cookies(user_id)
-            entries.append((cookies, user.display_name))
-        entries.sort(reverse=True)
-
-        for i, (cookies, name) in enumerate(entries[:25], 1):
-            if i == 1:
-                name = '🥇' + name
-            elif i == 2:
-                name = '🥈' + name
-            elif i == 3:
-                name = '🥉' + name
-            embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
-
-        return embed
+        return dict(
+            content=content,
+            view=view,
+            embed=embed
+        )
 
 
 @bot.tree.command()
@@ -125,12 +171,9 @@ async def hello(interaction: d.Interaction):
 @bot.tree.command()
 async def cookie(interaction: d.Interaction):
     """ create cookie clicker message """
-    view = CookieClicker()
-    embed = await make_leaderboard_embed()
-    await interaction.response.send_message(view=view, embed=embed)
+    await interaction.response.send_message(**await make_clicker_message())
     msg: d.Message = await interaction.original_response()
-    async with bot.db:
-        bot.db.set_clicker_message_id(msg.id)
+    await bot.set_clicker_message(msg)
 
 @bot.tree.command()
 async def jar(interaction: d.Interaction):

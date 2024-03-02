@@ -1,6 +1,7 @@
 import asyncio
 import json
 from datetime import datetime
+from functools import wraps
 from typing import Set
 
 _1970 = datetime(1970, 1, 1).isoformat()
@@ -38,12 +39,19 @@ class Database:
         self._data.setdefault('clicked_cookies', {})
         self._data.setdefault('last_clicked', _1970)
         self._data.setdefault('clicker_message_id', None)
+        self._data.setdefault('clicker_channel_id', None)
 
-    def get_clicker_message_id(self) -> int:
+    def get_clicker_message_id(self) -> int | None:
         return self._data['clicker_message_id']
+
+    def get_clicker_channel_id(self) -> int | None:
+        return self._data['clicker_channel_id']
 
     def set_clicker_message_id(self, message_id: int):
         self._data['clicker_message_id'] = message_id
+
+    def set_clicker_channel_id(self, channel_id: int):
+        self._data['clicker_channel_id'] = channel_id
 
     def get_clicked_cookies(self, user_id: int) -> int:
         return self._data['clicked_cookies'].get(str(user_id), 0)
