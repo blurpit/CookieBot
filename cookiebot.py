@@ -125,6 +125,9 @@ class CookieClicker(d.ui.View):
                 user_id = interaction.user.id
                 bot.db.add_clicked_cookies(user_id, num)
                 bot.db.update_last_clicked()
+                bot.db.set_last_clicked_user_id(user_id)
+                bot.db.set_last_clicked_value(num)
+
                 msg = f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
                 ephemeral = False
 
@@ -135,6 +138,12 @@ async def make_clicker_message() -> dict:
         content = '# 🍪 ' + str(bot.db.get_total_cookies())
         view = CookieClicker()
         embed = d.Embed(color=d.Color.blue())
+
+        last_clicked_user_id = bot.db.get_last_clicked_user_id()
+        if last_clicked_user_id is not None:
+            user = bot.get_user(last_clicked_user_id)
+            value = bot.db.get_last_clicked_value()
+            content += f'\n👆 **+{value}** {user.display_name}'
 
         entries = []
         for user_id in bot.db.get_participants_user_ids():

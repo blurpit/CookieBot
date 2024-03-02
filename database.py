@@ -1,7 +1,6 @@
 import asyncio
 import json
 from datetime import datetime
-from functools import wraps
 from typing import Set
 
 _1970 = datetime(1970, 1, 1).isoformat()
@@ -12,6 +11,8 @@ class Database:
         self._filepath = filepath
         self._data: dict | None = None
         self._lock = asyncio.Lock()
+
+    # --- IO --- #
 
     async def __aenter__(self):
         await self.lock()
@@ -37,10 +38,13 @@ class Database:
             self._data = json.loads(f.read() or '{}')
 
         self._data.setdefault('clicked_cookies', {})
-        self._data.setdefault('last_clicked', _1970)
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
+        self._data.setdefault('last_clicked_time', _1970)
+        self._data.setdefault('last_clicked_user_id', None)
+        self._data.setdefault('last_clicked_value', 0)
 
+    # --- Clicker message --- #
     def get_clicker_message_id(self) -> int | None:
         return self._data['clicker_message_id']
 
@@ -52,6 +56,8 @@ class Database:
 
     def set_clicker_channel_id(self, channel_id: int):
         self._data['clicker_channel_id'] = channel_id
+
+    # --- Cookie counts --- #
 
     def get_cookies(self, user_id: int) -> int:
         return self.get_clicked_cookies(user_id)
@@ -67,20 +73,34 @@ class Database:
             self._data['clicked_cookies'] = 0
         self._data['clicked_cookies'][str(user_id)] += cookies
 
+    # --- Clicker state --- #
+
     def get_participants_user_ids(self) -> Set[int]:
         return set(map(int, self._data['clicked_cookies'].keys()))
 
-    def get_last_clicked(self) -> datetime:
-        return datetime.fromisoformat(self._data['last_clicked'])
+    def get_last_clicked_time(self) -> datetime:
+        return datetime.fromisoformat(self._data['last_clicked_time'])
 
     def update_last_clicked(self, timestamp: datetime = None) -> datetime:
         if timestamp is None:
             timestamp = datetime.utcnow()
-        self._data['last_clicked'] = timestamp.isoformat()
+        self._data['last_clicked_time'] = timestamp.isoformat()
         return timestamp
 
+    def get_last_clicked_user_id(self) -> int | None:
+        return self._data['last_clicked_user_id']
+
+    def set_last_clicked_user_id(self, user_id: int):
+        self._data['last_clicked_user_id'] = user_id
+
+    def get_last_clicked_value(self) -> int:
+        return self._data['last_clicked_value']
+
+    def set_last_clicked_value(self, cookies: int):
+        self._data['last_clicked_value'] = cookies
+
     def get_cooldown_remaining(self, cooldown: int) -> float:
-        delta = datetime.utcnow() - self.get_last_clicked()
+        delta = datetime.utcnow() - self.get_last_clicked_time()
         return max(0.0, cooldown - delta.total_seconds())
 
     def is_on_cooldown(self, cooldown: int) -> bool:
