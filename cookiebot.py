@@ -1,13 +1,13 @@
-import math
 import random
 
 import discord as d
 from discord.ext import tasks
 
 from database import Database
+from util import *
 
 GUILD = d.Object(id=913924123405729812)
-LEADERBOARD_UPDATE_RATE = 5
+LEADERBOARD_UPDATE_RATE = 10
 COOKIE_COOLDOWN = 10
 COOKIE_RANGE = (1, 100)
 COOKIE_QUOTES = [
@@ -109,6 +109,7 @@ bot = CookieBot()
 class CookieClicker(d.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.button = self.children[0]
 
     @d.ui.button(label='Cookie!', style=d.ButtonStyle.grey, emoji='🍪', custom_id='cookie-btn')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
@@ -131,19 +132,31 @@ class CookieClicker(d.ui.View):
                 msg = f'{quote}\n{interaction.user.mention} got {num} cookie! Om nom nom nom'
                 ephemeral = False
 
+        button.disabled = True
+        bot.cookie_updater.restart()
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
 async def make_clicker_message() -> dict:
     async with bot.db:
+        # Total cookie count
         content = '# 🍪 ' + str(bot.db.get_total_cookies())
-        view = CookieClicker()
-        embed = d.Embed(color=d.Color.blue())
 
+        # Last clicked
         last_clicked_user_id = bot.db.get_last_clicked_user_id()
         if last_clicked_user_id is not None:
             user = bot.get_user(last_clicked_user_id)
             value = bot.db.get_last_clicked_value()
             content += f'\n👆 **+{value}** {user.display_name}'
+
+        # View and cookie button
+        view = CookieClicker()
+        cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
+        if cooldown > 0:
+            view.button.disabled = True
+            view.button.label = f'{short_time_str(cooldown)} ...'
+
+        # Leaderboard embed
+        embed = d.Embed(color=d.Color.blue())
 
         entries = []
         for user_id in bot.db.get_participants_user_ids():
@@ -154,12 +167,14 @@ async def make_clicker_message() -> dict:
 
         for i, (cookies, name) in enumerate(entries[:25], 1):
             if i == 1:
-                name = '🥇' + name
+                name = '🥇 ' + name
             elif i == 2:
-                name = '🥈' + name
+                name = '🥈 ' + name
             elif i == 3:
-                name = '🥉' + name
-            embed.add_field(name=f'{i}. {name}', value=f'🍪 {cookies}', inline=False)
+                name = '🥉 ' + name
+            else:
+                name = f'{i}. {name}'
+            embed.add_field(name=name, value=f'🍪 {cookies}', inline=True)
 
         return dict(
             content=content,
@@ -193,15 +208,6 @@ async def jar(interaction: d.Interaction):
     else:
         msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
-
-def time_str(seconds):
-    seconds = math.ceil(seconds)
-    if seconds > 3600:
-        return f'{seconds // 3600} hour'
-    elif seconds > 60:
-        return f'{seconds // 60} minute'
-    else:
-        return f'{seconds} second'
 
 
 if __name__ == '__main__':
