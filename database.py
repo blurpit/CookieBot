@@ -91,8 +91,8 @@ class Database:
     def get_passive_cookies(self, user_id: int) -> int:
         """ Number of cookies a given user has gotten through passive upgrades """
         return sum(
-            upgrade.get_cookies_since(purchased, n)
-            for upgrade, n, purchased in self.iter_upgrades(user_id)
+            upgrade.get_cookies_since(purchased, level)
+            for upgrade, level, purchased in self.iter_upgrades(user_id)
         )
 
     def add_clicked_cookies(self, user_id: int, cookies: int):
@@ -104,8 +104,8 @@ class Database:
     # --- Upgrades --- #
 
     def iter_upgrades(self, user_id: int) -> Iterable[tuple[Upgrade, int, datetime]]:
-        """ Iterates the upgrades a given user has purchased. Yields (Upgrade,
-            upgrade index (separate for each upgrade type), purchased timestamp) """
+        """ Iterates the upgrades a given user has purchased. Yields
+            (Upgrade, level, purchased timestamp) """
         copies = {}
         for upgrade in self._data['upgrades'].get(str(user_id), []):
             id = upgrade['id']
@@ -113,26 +113,40 @@ class Database:
             purchased = datetime.fromisoformat(upgrade['purchased'])
             yield UPGRADES[id], copies[id], purchased
 
+    def get_highest_upgrades(self, user_id: int) -> dict[int, tuple[int, datetime]]:
+        """ Returns a dict of upgrade id -> highest level, last purchased """
+        result = {}
+
+        for upgrade in self._data['upgrades'].get(str(user_id), []):
+            id = upgrade['id']
+            purchased = datetime.fromisoformat(upgrade['purchased'])
+            level = 0
+            if id in result:
+                level = result[id][0]
+            result[id] = (level + 1, purchased)
+
+        return result
+
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
         return sum(
-            upgrade.get_cookies_per_second(n)
-            for upgrade, n, _ in self.iter_upgrades(user_id)
+            upgrade.get_cookies_per_second(level)
+            for upgrade, level, _ in self.iter_upgrades(user_id)
         )
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
         return sum(
-            upgrade.get_cookies_per_click(n)
-            for upgrade, n, _ in self.iter_upgrades(user_id)
+            upgrade.get_cookies_per_click(level)
+            for upgrade, level, _ in self.iter_upgrades(user_id)
         )
 
     def get_spent_on_upgrades(self, user_id: int) -> int:
         """ How many cookies a given user has spent on upgrades """
         return sum(
-            upgrade.get_price(n)
-            for upgrade, n, _ in self.iter_upgrades(user_id)
+            upgrade.get_price(level)
+            for upgrade, level, _ in self.iter_upgrades(user_id)
         )
 
     # --- Clicker state --- #

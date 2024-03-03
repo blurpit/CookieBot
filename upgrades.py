@@ -1,76 +1,79 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
+from util import roman
+
+
 class Upgrade(ABC):
     def __init__(self, id: int, name: str):
         self.id = id
         self.name = name
 
     @abstractmethod
-    def get_cookies_since(self, timestamp: datetime, n: int) -> int:
+    def get_cookies_since(self, timestamp: datetime, level: int) -> int:
         """ How many cookies given between `timestamp` and now, rounding DOWN
             to the nearest second """
         pass
 
     @abstractmethod
-    def get_cookies_per_second(self, n: int) -> int:
-        """ Cookies per second given by the `n`th copy of this upgrade """
+    def get_cookies_per_second(self, level: int) -> int:
+        """ Cookies per second given by this upgrade at the given level """
         pass
 
     @abstractmethod
-    def get_cookies_per_click(self, n: int) -> int:
-        """ Cookies per click given by `n`th copy of this upgrade """
+    def get_cookies_per_click(self, level: int) -> int:
+        """ Cookies per click given by this upgrade at the given level """
         pass
 
-    @abstractmethod
-    def get_price(self, n: int) -> int:
-        """ Price of the `n`th copy of this upgrade """
-        pass
+    def get_cumulative_cookies_per_click(self, level: int) -> int:
+        """ Cookies per click given by upgrades of every level up to and
+            including `level` """
+        return sum(self.get_cookies_per_click(n) for n in range(1, level + 1))
+
+    def get_cumulative_cookies_per_second(self, level: int) -> int:
+        """ Cookies per second given by upgrades of every level up to and
+            including `level` """
+        return sum(self.get_cookies_per_second(n) for n in range(1, level + 1))
 
     @abstractmethod
-    def get_description(self, n: int) -> str:
+    def get_price(self, level: int) -> int:
+        """ Price of the the upgrade at the given level """
         pass
 
 class ClickUpgrade(Upgrade):
     def __init__(self, id, name, base_cpc: int):
-        super().__init__(id, '👆 ' + name)
+        super().__init__(id, name)
         self.base_cpc = base_cpc
 
-    def get_cookies_since(self, timestamp, n):
+    def get_cookies_since(self, timestamp, level):
         return 0
 
-    def get_cookies_per_second(self, n):
+    def get_cookies_per_second(self, level):
         return 0
 
-    def get_cookies_per_click(self, n):
-        return self.base_cpc * n
+    def get_cookies_per_click(self, level):
+        return self.base_cpc * level
 
-    def get_price(self, n):
+    def get_price(self, level):
         return 100
-
-    def get_description(self, n):
-        return f'🍪 +{self.get_cookies_per_click(n)} / click'
 
 class PassiveUpgrade(Upgrade):
     def __init__(self, id: int, name, base_cps: int):
-        super().__init__(id, '🕙 ' + name)
+        super().__init__(id, name)
         self.base_cps = base_cps
 
-    def get_cookies_since(self, timestamp, n):
+    def get_cookies_since(self, timestamp, level):
         if self.base_cps == 0:
             return 0
         now = datetime.utcnow()
         delta = int((now - timestamp).total_seconds())
-        return max(delta * self.get_cookies_per_second(n), 0)
+        return max(delta * self.get_cookies_per_second(level), 0)
 
-    def get_cookies_per_second(self, n):
-        return self.base_cps * n
+    def get_cookies_per_second(self, level):
+        return self.base_cps * level
 
-    def get_cookies_per_click(self, n):
+    def get_cookies_per_click(self, level):
         return 0
 
-    def get_price(self, n):
+    def get_price(self, level):
         return 100
-
-    def get_description(self, n):
-        return f'🍪 +{self.get_cookies_per_second(n)} / sec'

@@ -22,7 +22,7 @@ class CookieBot(d.Client):
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
-        await self.init_clicker_message()
+        # await self.init_clicker_message()
 
     async def setup_hook(self):
         guild = d.Object(id=GUILD_ID)
@@ -106,6 +106,13 @@ class CookieClicker(d.ui.View):
         bot.cookie_updater.restart()
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
+class Shop(d.ui.View):
+    pass
+
+class UpgradeSelect(d.ui.Select):
+    pass
+
+
 async def make_clicker_message() -> dict | None:
     async with bot.db:
         # Don't update the message if the cookie count hasn't changed
@@ -186,12 +193,34 @@ async def upgrades(interaction: d.Interaction):
         cpc = bot.db.get_cookies_per_click(user.id)
         embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
 
-        for upgrade, n, purchased in bot.db.iter_upgrades(user.id):
-            embed.add_field(
-                name=f'{upgrade.name} {n}',
-                value=upgrade.get_description(n),
-                inline=True
-            )
+        purchased = bot.db.get_highest_upgrades(user.id)
+        for upgrade in UPGRADES:
+            level = purchased[upgrade.id][0] if upgrade.id in purchased else 0
+            price = upgrade.get_price(level + 1)
+
+            if isinstance(upgrade, ClickUpgrade):
+                name = f'{upgrade.id + 1}. 👆 {upgrade.name}'
+                if level > 0:
+                    num = upgrade.get_cumulative_cookies_per_click(level)
+                    num_next = num + upgrade.get_cookies_per_click(level + 1)
+                    unit = 'click'
+            elif isinstance(upgrade, PassiveUpgrade):
+                name = f'{upgrade.id + 1}. 🕙 {upgrade.name}'
+                if level > 0:
+                    num = upgrade.get_cumulative_cookies_per_second(level)
+                    num_next = num + upgrade.get_cookies_per_second(level + 1)
+                    unit = 'sec'
+
+            if level > 0:
+                value = (f'Lv. {level}\n'
+                         f'**+{num} / {unit}**\n'
+                         f'Next: +{num_next} / {unit}\n'
+                         f'Cost: 🍪 {price}')
+            else:
+                value = (f'Not purchased yet!\n'
+                         f'Cost: 🍪 {price}')
+
+            embed.add_field(name=name, value=value, inline=True)
 
     await interaction.response.send_message(embed=embed)
 
