@@ -22,18 +22,23 @@ class CookieBot(d.Client):
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
-        # await self.init_clicker_message()
+        await self.init_clicker_message()
 
     async def setup_hook(self):
+        # Sync slash commands
         guild = d.Object(id=GUILD_ID)
         self.tree.copy_global_to(guild=guild)
         await self.tree.sync(guild=guild)
         print('Commands synced.')
 
+        # Add persistent views
         async with self.db:
             clicker_msg_id = self.db.get_clicker_message_id()
             self.add_view(CookieClicker(), message_id=clicker_msg_id)
             print(f'Added persistent clicker view for message {clicker_msg_id}')
+
+        # Start cookie updater task
+        self.cookie_updater.start()
 
     async def set_clicker_message(self, msg: d.Message):
         async with self.db:
@@ -41,8 +46,8 @@ class CookieBot(d.Client):
             self.db.set_clicker_channel_id(msg.channel.id)
 
             self.message = msg
-            if not self.cookie_updater.is_running():
-                self.cookie_updater.start()
+            if not self.clicker_message_updater.is_running():
+                self.clicker_message_updater.start()
 
             print(f'Updated cookie message to {msg.id}')
 
@@ -53,24 +58,40 @@ class CookieBot(d.Client):
             if msg_id is not None:
                 channel = bot.get_channel(channel_id)
                 self.message = await channel.fetch_message(msg_id)
-                self.cookie_updater.start()
+                self.clicker_message_updater.start()
                 print(f'Initialized cookie message {msg_id}')
 
-    @tasks.loop(seconds=UPDATE_RATE)
+    @tasks.loop(seconds=1)
     async def cookie_updater(self):
-        print('Updating clicker')
-        msg = await  make_clicker_message()
-        if msg is not None:
-            await self.message.edit(**msg)
+        """ Updates the database cookie count. Does not use discord api. """
+        async with self.db:
+            for user_id in self.db.get_participants_user_ids():
+                cps = self.db.get_cookies_per_second(user_id)
+                self.db.add_cookies(user_id, cps)
 
     @cookie_updater.before_loop
     async def before_cookie_updater(self):
-        await self.wait_until_ready()
         print('Cookie updater started.')
 
     @cookie_updater.after_loop
     async def after_cookie_updater(self):
         print('Cookie updater stopped.')
+
+    @tasks.loop(seconds=UPDATE_RATE)
+    async def clicker_message_updater(self):
+        print('Updating clicker')
+        msg = await  make_clicker_message()
+        if msg is not None:
+            await self.message.edit(**msg)
+
+    @clicker_message_updater.before_loop
+    async def before_cookie_updater(self):
+        await self.wait_until_ready()
+        print('Clicker message updater started.')
+
+    @clicker_message_updater.after_loop
+    async def after_cookie_updater(self):
+        print('Clicker message updater stopped.')
 
 bot = CookieBot()
 
@@ -93,7 +114,7 @@ class CookieClicker(d.ui.View):
                 base_num = random.randint(*COOKIE_RANGE)
 
                 num = base_num + bot.db.get_cookies_per_click(user_id)
-                bot.db.add_clicked_cookies(user_id, num)
+                bot.db.add_cookies(user_id, num)
                 bot.db.update_last_clicked()
                 bot.db.set_last_clicked_user_id(user_id)
                 bot.db.set_last_clicked_value(num)
@@ -103,7 +124,7 @@ class CookieClicker(d.ui.View):
                 ephemeral = True
 
         button.disabled = True
-        bot.cookie_updater.restart()
+        bot.clicker_message_updater.restart() # force update after button press
         await interaction.response.send_message(msg, ephemeral=ephemeral)
 
 class Shop(d.ui.View):
@@ -191,24 +212,24 @@ async def upgrades(interaction: d.Interaction):
     async with bot.db:
         cps = bot.db.get_cookies_per_second(user.id)
         cpc = bot.db.get_cookies_per_click(user.id)
+        levels = bot.db.get_upgrade_levels(user.id)
         embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
 
-        purchased = bot.db.get_highest_upgrades(user.id)
         for upgrade in UPGRADES:
-            level = purchased[upgrade.id][0] if upgrade.id in purchased else 0
+            level = levels[upgrade.id]
             price = upgrade.get_price(level + 1)
 
             if isinstance(upgrade, ClickUpgrade):
                 name = f'{upgrade.id + 1}. 👆 {upgrade.name}'
                 if level > 0:
-                    num = upgrade.get_cumulative_cookies_per_click(level)
-                    num_next = num + upgrade.get_cookies_per_click(level + 1)
+                    num = upgrade.get_cookies_per_click(level)
+                    num_next = upgrade.get_cookies_per_click(level + 1)
                     unit = 'click'
             elif isinstance(upgrade, PassiveUpgrade):
                 name = f'{upgrade.id + 1}. 🕙 {upgrade.name}'
                 if level > 0:
-                    num = upgrade.get_cumulative_cookies_per_second(level)
-                    num_next = num + upgrade.get_cookies_per_second(level + 1)
+                    num = upgrade.get_cookies_per_second(level)
+                    num_next = upgrade.get_cookies_per_second(level + 1)
                     unit = 'sec'
 
             if level > 0:

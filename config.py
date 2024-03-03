@@ -5,10 +5,9 @@ UPDATE_RATE = 10
 COOKIE_COOLDOWN = 20
 COOKIE_RANGE = (1, 1)
 UPGRADES = [
-    # Id needs to be the same as index!!
-    PassiveUpgrade(0, 'PassiveUpgrade +1', 1),
-    PassiveUpgrade(1, 'PassiveUpgrade +25', 25),
-    ClickUpgrade(2, 'ClickUpgrade +5', 5),
+    PassiveUpgrade('PassiveUpgrade +1', 1),
+    PassiveUpgrade('PassiveUpgrade +25', 25),
+    ClickUpgrade('ClickUpgrade +5', 5),
 ]
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",

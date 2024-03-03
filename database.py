@@ -1,10 +1,9 @@
 import asyncio
 import json
 from datetime import datetime
-from typing import Iterable, Set
+from typing import Iterable
 
 from config import UPGRADES
-from upgrades import Upgrade
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -80,80 +79,51 @@ class Database:
 
     def get_cookies(self, user_id: int) -> int:
         """ Number of cookies a given user has """
-        return (self.get_clicked_cookies(user_id)
-                + self.get_passive_cookies(user_id)
-                - self.get_spent_on_upgrades(user_id))
+        return self._data['cookies'].get(str(user_id), 0)
 
-    def get_clicked_cookies(self, user_id: int) -> int:
-        """ Number of cookies a given user has gotten through clicking the button """
-        return self._data['clicked_cookies'].get(str(user_id), 0)
-
-    def get_passive_cookies(self, user_id: int) -> int:
-        """ Number of cookies a given user has gotten through passive upgrades """
-        return sum(
-            upgrade.get_cookies_since(purchased, level)
-            for upgrade, level, purchased in self.iter_upgrades(user_id)
-        )
-
-    def add_clicked_cookies(self, user_id: int, cookies: int):
+    def add_cookies(self, user_id: int, cookies: int):
         """ Adds a number of cookies to a given user's clicked cookies count """
-        if str(user_id) not in self._data['clicked_cookies']:
-            self._data['clicked_cookies'] = 0
-        self._data['clicked_cookies'][str(user_id)] += cookies
+        if str(user_id) not in self._data['cookies']:
+            self._data['cookies'] = 0
+        self._data['cookies'][str(user_id)] += cookies
 
     # --- Upgrades --- #
 
-    def iter_upgrades(self, user_id: int) -> Iterable[tuple[Upgrade, int, datetime]]:
-        """ Iterates the upgrades a given user has purchased. Yields
-            (Upgrade, level, purchased timestamp) """
-        copies = {}
-        for upgrade in self._data['upgrades'].get(str(user_id), []):
-            id = upgrade['id']
-            copies[id] = copies.get(id, 0) + 1
-            purchased = datetime.fromisoformat(upgrade['purchased'])
-            yield UPGRADES[id], copies[id], purchased
-
-    def get_highest_upgrades(self, user_id: int) -> dict[int, tuple[int, datetime]]:
-        """ Returns a dict of upgrade id -> highest level, last purchased """
-        result = {}
-
-        for upgrade in self._data['upgrades'].get(str(user_id), []):
-            id = upgrade['id']
-            purchased = datetime.fromisoformat(upgrade['purchased'])
-            level = 0
-            if id in result:
-                level = result[id][0]
-            result[id] = (level + 1, purchased)
-
-        return result
+    def get_upgrade_levels(self, user_id: int) -> list[int]:
+        """ Returns a list of levels for the upgrades the given user owns (indices
+            match config.UPGRADES) """
+        levels = [0] * len(UPGRADES)
+        for id, level in self._data['upgrades'].get(str(user_id), {}).items():
+            levels[int(id)] = level
+        return levels
 
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
         return sum(
-            upgrade.get_cookies_per_second(level)
-            for upgrade, level, _ in self.iter_upgrades(user_id)
+            UPGRADES[i].get_cookies_per_second(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
         )
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
         return sum(
-            upgrade.get_cookies_per_click(level)
-            for upgrade, level, _ in self.iter_upgrades(user_id)
+            UPGRADES[i].get_cookies_per_click(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
         )
 
     def get_spent_on_upgrades(self, user_id: int) -> int:
         """ How many cookies a given user has spent on upgrades """
         return sum(
-            upgrade.get_price(level)
-            for upgrade, level, _ in self.iter_upgrades(user_id)
+            UPGRADES[i].get_price(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
         )
 
     # --- Clicker state --- #
 
-    def get_participants_user_ids(self) -> Set[int]:
+    def get_participants_user_ids(self) -> Iterable[int]:
         """ Set of user_ids of people who have clicked the button before """
-        return set(map(int, self._data['clicked_cookies'].keys()))
+        return map(int, self._data['cookies'].keys())
 
     def get_last_clicked_time(self) -> datetime:
         """ Timestamp of when the button was last clicked by someone """
