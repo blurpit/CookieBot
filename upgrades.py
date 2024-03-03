@@ -23,6 +23,11 @@ class Upgrade(ABC):
         pass
 
     @abstractmethod
+    def get_price(self, n: int) -> int:
+        """ Price of the `n`th copy of this upgrade """
+        pass
+
+    @abstractmethod
     def get_description(self, n: int) -> str:
         pass
 
@@ -39,6 +44,9 @@ class ClickUpgrade(Upgrade):
 
     def get_cookies_per_click(self, n):
         return self.base_cpc * n
+
+    def get_price(self, n):
+        return 100
 
     def get_description(self, n):
         return f'🍪 +{self.get_cookies_per_click(n)} / click'
@@ -60,6 +68,9 @@ class PassiveUpgrade(Upgrade):
 
     def get_cookies_per_click(self, n):
         return 0
+
+    def get_price(self, n):
+        return 100
 
     def get_description(self, n):
         return f'🍪 +{self.get_cookies_per_second(n)} / sec'

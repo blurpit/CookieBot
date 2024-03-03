@@ -80,7 +80,9 @@ class Database:
 
     def get_cookies(self, user_id: int) -> int:
         """ Number of cookies a given user has """
-        return self.get_clicked_cookies(user_id) + self.get_passive_cookies(user_id)
+        return (self.get_clicked_cookies(user_id)
+                + self.get_passive_cookies(user_id)
+                - self.get_spent_on_upgrades(user_id))
 
     def get_clicked_cookies(self, user_id: int) -> int:
         """ Number of cookies a given user has gotten through clicking the button """
@@ -88,10 +90,10 @@ class Database:
 
     def get_passive_cookies(self, user_id: int) -> int:
         """ Number of cookies a given user has gotten through passive upgrades """
-        cookies = 0
-        for upgrade, n, purchased in self.iter_upgrades(user_id):
-            cookies += upgrade.get_cookies_since(purchased, n)
-        return cookies
+        return sum(
+            upgrade.get_cookies_since(purchased, n)
+            for upgrade, n, purchased in self.iter_upgrades(user_id)
+        )
 
     def add_clicked_cookies(self, user_id: int, cookies: int):
         """ Adds a number of cookies to a given user's clicked cookies count """
@@ -113,18 +115,25 @@ class Database:
 
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
-        cps = 0
-        for upgrade, n, _ in self.iter_upgrades(user_id):
-            cps += upgrade.get_cookies_per_second(n)
-        return cps
+        return sum(
+            upgrade.get_cookies_per_second(n)
+            for upgrade, n, _ in self.iter_upgrades(user_id)
+        )
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
-        cpc = 0
-        for upgrade, n, _ in self.iter_upgrades(user_id):
-            cpc += upgrade.get_cookies_per_click(n)
-        return cpc
+        return sum(
+            upgrade.get_cookies_per_click(n)
+            for upgrade, n, _ in self.iter_upgrades(user_id)
+        )
+
+    def get_spent_on_upgrades(self, user_id: int) -> int:
+        """ How many cookies a given user has spent on upgrades """
+        return sum(
+            upgrade.get_price(n)
+            for upgrade, n, _ in self.iter_upgrades(user_id)
+        )
 
     # --- Clicker state --- #
 
