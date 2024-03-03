@@ -1,7 +1,10 @@
 import asyncio
 import json
 from datetime import datetime
-from typing import Set
+from typing import Iterable, Set
+
+from config import UPGRADES
+from upgrades import Upgrade
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -38,6 +41,7 @@ class Database:
             self._data = json.loads(f.read() or '{}')
 
         self._data.setdefault('clicked_cookies', {})
+        self._data.setdefault('upgrades', {})
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
         self._data.setdefault('last_clicked_time', _1970)
@@ -60,7 +64,7 @@ class Database:
     # --- Cookie counts --- #
 
     def get_cookies(self, user_id: int) -> int:
-        return self.get_clicked_cookies(user_id)
+        return self.get_clicked_cookies(user_id) + self.get_passive_cookies(user_id)
 
     def get_total_cookies(self) -> int:
         return sum(self.get_cookies(user_id) for user_id in self.get_participants_user_ids())
@@ -72,6 +76,35 @@ class Database:
         if str(user_id) not in self._data['clicked_cookies']:
             self._data['clicked_cookies'] = 0
         self._data['clicked_cookies'][str(user_id)] += cookies
+
+    # --- Upgrades --- #
+
+    def iter_upgrades(self, user_id: int) -> Iterable[tuple[Upgrade, int, datetime]]:
+        """ yields (Upgrade, upgrade index (separate for each upgrade type), purchased timestamp) """
+        copies = {}
+        for upgrade in self._data['upgrades'].get(str(user_id), []):
+            id = upgrade['id']
+            copies[id] = copies.get(id, 0) + 1
+            purchased = datetime.fromisoformat(upgrade['purchased'])
+            yield UPGRADES[id], copies[id], purchased
+
+    def get_cookies_per_second(self, user_id: int) -> int:
+        cps = 0
+        for upgrade, n, _ in self.iter_upgrades(user_id):
+            cps += upgrade.get_cookies_per_second(n)
+        return cps
+
+    def get_passive_cookies(self, user_id: int) -> int:
+        cookies = 0
+        for upgrade, n, purchased in self.iter_upgrades(user_id):
+            cookies += upgrade.get_cookies_since(purchased, n)
+        return cookies
+
+    def get_cookies_per_click(self, user_id: int) -> int:
+        cpc = 0
+        for upgrade, n, _ in self.iter_upgrades(user_id):
+            cpc += upgrade.get_cookies_per_click(n)
+        return cpc
 
     # --- Clicker state --- #
 
