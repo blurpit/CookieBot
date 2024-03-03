@@ -163,30 +163,16 @@ async def make_clicker_message() -> dict | None:
 
 @bot.tree.command()
 async def hello(interaction: d.Interaction):
-    """ Wake up babe its time for another april fools bot """
+    """ wake up babe its time for another april fools bot """
     await interaction.response.send_message(f'Hi, {interaction.user.mention}')
 
 @bot.tree.command()
 async def cookie(interaction: d.Interaction):
-    """ create cookie clicker message """
+    """ send create cookie clicker message """
     bot.prev_cookie_count = -1 # force update
     await interaction.response.send_message(**await make_clicker_message())
     msg: d.Message = await interaction.original_response()
     await bot.set_clicker_message(msg)
-
-@bot.tree.command()
-async def jar(interaction: d.Interaction):
-    """ how many cookies in your jar """
-    async with bot.db:
-        cookies = bot.db.get_clicked_cookies(interaction.user.id)
-
-    if cookies == 0:
-        msg = f"{interaction.user.mention} no have any cookie!"
-    elif cookies < 500:
-        msg = f"{interaction.user.mention} has {cookies} cookies! not many cookie but better than no cookie!!"
-    else:
-        msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
-    await interaction.response.send_message(msg)
 
 @bot.tree.command()
 async def upgrades(interaction: d.Interaction):
@@ -208,6 +194,20 @@ async def upgrades(interaction: d.Interaction):
             )
 
     await interaction.response.send_message(embed=embed)
+
+@bot.tree.command()
+async def jar(interaction: d.Interaction):
+    """ how many cookies in your jar """
+    async with bot.db:
+        cookies = bot.db.get_cookies(interaction.user.id)
+
+    if cookies == 0:
+        msg = f"{interaction.user.mention} no have any cookie!"
+    elif cookies < 500:
+        msg = f"{interaction.user.mention} has {cookies} cookies! not many cookie but better than no cookie!!"
+    else:
+        msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
+    await interaction.response.send_message(msg)
 
 
 if __name__ == '__main__':
