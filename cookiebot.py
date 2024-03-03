@@ -187,6 +187,27 @@ async def jar(interaction: d.Interaction):
         msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
+@bot.tree.command()
+async def upgrades(interaction: d.Interaction):
+    """ your upgrades """
+    user = interaction.user
+    embed = d.Embed(color=d.Color.blue())
+    embed.title = f"{user.display_name}'s upgrades"
+
+    async with bot.db:
+        cps = bot.db.get_cookies_per_second(user.id)
+        cpc = bot.db.get_cookies_per_click(user.id)
+        embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
+
+        for upgrade, n, purchased in bot.db.iter_upgrades(user.id):
+            embed.add_field(
+                name=f'{upgrade.name} {n}',
+                value=upgrade.get_description(n),
+                inline=True
+            )
+
+    await interaction.response.send_message(embed=embed)
+
 
 if __name__ == '__main__':
     with open('client_secret.txt') as file:
