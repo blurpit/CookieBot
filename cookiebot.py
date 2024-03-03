@@ -88,10 +88,11 @@ class CookieClicker(d.ui.View):
                 ephemeral = True
                 print(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
             else:
-                quote = random.choice(COOKIE_QUOTES)
-                num = random.randint(*COOKIE_RANGE)
-
                 user_id = interaction.user.id
+                quote = random.choice(COOKIE_QUOTES)
+                base_num = random.randint(*COOKIE_RANGE)
+
+                num = base_num + bot.db.get_cookies_per_click(user_id)
                 bot.db.add_clicked_cookies(user_id, num)
                 bot.db.update_last_clicked()
                 bot.db.set_last_clicked_user_id(user_id)
