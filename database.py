@@ -27,16 +27,20 @@ class Database:
         self.unlock()
 
     async def lock(self):
+        """ Threadlock the database """
         await self._lock.acquire()
 
     def unlock(self):
+        """ Release the database lock """
         self._lock.release()
 
     def save(self):
+        """ Save the database to the file """
         with open(self._filepath, 'w+') as f:
             f.write(json.dumps(self._data, indent=4))
 
     def load(self):
+        """ Load the database from the file """
         with open(self._filepath, 'r') as f:
             self._data = json.loads(f.read() or '{}')
 
@@ -50,29 +54,47 @@ class Database:
 
     # --- Clicker message --- #
     def get_clicker_message_id(self) -> int | None:
+        """ ID of the message with the cookie button and leaderboard """
         return self._data['clicker_message_id']
 
     def get_clicker_channel_id(self) -> int | None:
+        """ ID of the channel the clicker message is in """
         return self._data['clicker_channel_id']
 
     def set_clicker_message_id(self, message_id: int):
+        """ Set the clicker message id """
         self._data['clicker_message_id'] = message_id
 
     def set_clicker_channel_id(self, channel_id: int):
+        """ Set the clicker channel id """
         self._data['clicker_channel_id'] = channel_id
 
     # --- Cookie counts --- #
 
+    def get_total_cookies(self) -> int:
+        """ Total number of cookies everyone collectively has """
+        return sum(
+            self.get_cookies(user_id)
+            for user_id in self.get_participants_user_ids()
+        )
+
     def get_cookies(self, user_id: int) -> int:
+        """ Number of cookies a given user has """
         return self.get_clicked_cookies(user_id) + self.get_passive_cookies(user_id)
 
-    def get_total_cookies(self) -> int:
-        return sum(self.get_cookies(user_id) for user_id in self.get_participants_user_ids())
-
     def get_clicked_cookies(self, user_id: int) -> int:
+        """ Number of cookies a given user has gotten through clicking the button """
         return self._data['clicked_cookies'].get(str(user_id), 0)
 
+    def get_passive_cookies(self, user_id: int) -> int:
+        """ Number of cookies a given user has gotten through passive upgrades """
+        cookies = 0
+        for upgrade, n, purchased in self.iter_upgrades(user_id):
+            cookies += upgrade.get_cookies_since(purchased, n)
+        return cookies
+
     def add_clicked_cookies(self, user_id: int, cookies: int):
+        """ Adds a number of cookies to a given user's clicked cookies count """
         if str(user_id) not in self._data['clicked_cookies']:
             self._data['clicked_cookies'] = 0
         self._data['clicked_cookies'][str(user_id)] += cookies
@@ -80,7 +102,8 @@ class Database:
     # --- Upgrades --- #
 
     def iter_upgrades(self, user_id: int) -> Iterable[tuple[Upgrade, int, datetime]]:
-        """ yields (Upgrade, upgrade index (separate for each upgrade type), purchased timestamp) """
+        """ Iterates the upgrades a given user has purchased. Yields (Upgrade,
+            upgrade index (separate for each upgrade type), purchased timestamp) """
         copies = {}
         for upgrade in self._data['upgrades'].get(str(user_id), []):
             id = upgrade['id']
@@ -89,18 +112,15 @@ class Database:
             yield UPGRADES[id], copies[id], purchased
 
     def get_cookies_per_second(self, user_id: int) -> int:
+        """ Number of cookies a given user gets each second through passive upgrades """
         cps = 0
         for upgrade, n, _ in self.iter_upgrades(user_id):
             cps += upgrade.get_cookies_per_second(n)
         return cps
 
-    def get_passive_cookies(self, user_id: int) -> int:
-        cookies = 0
-        for upgrade, n, purchased in self.iter_upgrades(user_id):
-            cookies += upgrade.get_cookies_since(purchased, n)
-        return cookies
-
     def get_cookies_per_click(self, user_id: int) -> int:
+        """ Number of cookies a given user gets from clicking due to upgrades.
+            Does not include the base number of cookies the button gives. """
         cpc = 0
         for upgrade, n, _ in self.iter_upgrades(user_id):
             cpc += upgrade.get_cookies_per_click(n)
@@ -109,32 +129,43 @@ class Database:
     # --- Clicker state --- #
 
     def get_participants_user_ids(self) -> Set[int]:
+        """ Set of user_ids of people who have clicked the button before """
         return set(map(int, self._data['clicked_cookies'].keys()))
 
     def get_last_clicked_time(self) -> datetime:
+        """ Timestamp of when the button was last clicked by someone """
         return datetime.fromisoformat(self._data['last_clicked_time'])
 
     def update_last_clicked(self, timestamp: datetime = None) -> datetime:
+        """ Set the timestamp of when the button was last clicked """
         if timestamp is None:
             timestamp = datetime.utcnow()
         self._data['last_clicked_time'] = timestamp.isoformat()
         return timestamp
 
     def get_last_clicked_user_id(self) -> int | None:
+        """ User id of the person who last clicked the button """
         return self._data['last_clicked_user_id']
 
     def set_last_clicked_user_id(self, user_id: int):
+        """ Set the user id of the person who last clicked the button """
         self._data['last_clicked_user_id'] = user_id
 
     def get_last_clicked_value(self) -> int:
+        """ How many cookies the last button click gave """
         return self._data['last_clicked_value']
 
     def set_last_clicked_value(self, cookies: int):
+        """ Set how many cookies the last button click gave """
         self._data['last_clicked_value'] = cookies
 
     def get_cooldown_remaining(self, cooldown: int) -> float:
+        """ Seconds remaining in seconds on the button cooldown (given the total
+            cooldown time in seconds) """
         delta = datetime.utcnow() - self.get_last_clicked_time()
         return max(0.0, cooldown - delta.total_seconds())
 
     def is_on_cooldown(self, cooldown: int) -> bool:
+        """ Whether the button is on cooldown (given the total cooldown time in
+            seconds) """
         return self.get_cooldown_remaining(cooldown) > 0
