@@ -1,10 +1,10 @@
-from upgrades import ClickUpgrade, PassiveUpgrade
+from upgrades import ClickUpgrade, PassiveUpgrade, Upgrade
 
 GUILD_ID = 913924123405729812
 UPDATE_RATE = 10
 COOKIE_COOLDOWN = 20
 COOKIE_RANGE = (1, 1)
-UPGRADES = [
+UPGRADES: list[Upgrade] = [
     PassiveUpgrade('PassiveUpgrade +1', 1),
     PassiveUpgrade('PassiveUpgrade +25', 25),
     ClickUpgrade('ClickUpgrade +5', 5),

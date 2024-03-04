@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Iterable
 
 from config import UPGRADES
+from upgrades import ClickUpgrade, PassiveUpgrade
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -17,21 +18,15 @@ class Database:
     # --- IO --- #
 
     async def __aenter__(self):
-        await self.lock()
-        self.load()
+        if self._data is None: # ignore nested withs
+            await self._lock.acquire()
+            self.load()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self.save()
-        self._data = None
-        self.unlock()
-
-    async def lock(self):
-        """ Threadlock the database """
-        await self._lock.acquire()
-
-    def unlock(self):
-        """ Release the database lock """
-        self._lock.release()
+        if self._data is not None:
+            self.save()
+            self._data = None
+            self._lock.release()
 
     def save(self):
         """ Save the database to the file """
@@ -97,19 +92,25 @@ class Database:
             levels[int(id)] = level
         return levels
 
+    def get_upgrade_level(self, user_id: int, upgrade_id: int) -> int:
+        """ Level of a specific upgrade """
+        return self._data['upgrades'].get(str(user_id), {}).get(str(upgrade_id), 0)
+
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
         return sum(
-            UPGRADES[i].get_cookies_per_second(level)
+            UPGRADES[i].get_cookies_per_unit(level)
             for i, level in enumerate(self.get_upgrade_levels(user_id))
+            if isinstance(UPGRADES[i], PassiveUpgrade)
         )
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
         return sum(
-            UPGRADES[i].get_cookies_per_click(level)
+            UPGRADES[i].get_cookies_per_unit(level)
             for i, level in enumerate(self.get_upgrade_levels(user_id))
+            if isinstance(UPGRADES[i], ClickUpgrade)
         )
 
     def get_spent_on_upgrades(self, user_id: int) -> int:

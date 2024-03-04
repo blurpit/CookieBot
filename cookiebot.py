@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import discord as d
 from discord.ext import tasks
@@ -130,51 +131,55 @@ class CookieClicker(d.ui.View):
     @d.ui.button(label='My upgrades', style=d.ButtonStyle.gray, emoji='⬆️', custom_id='upgrades-btn')
     async def upgrades(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
-        embed = d.Embed(color=d.Color.blue())
-        embed.title = f"{user.display_name}'s upgrades"
+        await interaction.response.send_message(**await make_upgrades_message(user))
 
-        async with bot.db:
-            cps = bot.db.get_cookies_per_second(user.id)
-            cpc = bot.db.get_cookies_per_click(user.id)
-            levels = bot.db.get_upgrade_levels(user.id)
-            embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
-
-            for upgrade in UPGRADES:
-                level = levels[upgrade.id]
-                price = upgrade.get_price(level + 1)
-
-                if isinstance(upgrade, ClickUpgrade):
-                    name = f'{upgrade.id + 1}. 👆 {upgrade.name}'
-                    if level > 0:
-                        num = upgrade.get_cookies_per_click(level)
-                        num_next = upgrade.get_cookies_per_click(level + 1)
-                        unit = 'click'
-                elif isinstance(upgrade, PassiveUpgrade):
-                    name = f'{upgrade.id + 1}. 🕙 {upgrade.name}'
-                    if level > 0:
-                        num = upgrade.get_cookies_per_second(level)
-                        num_next = upgrade.get_cookies_per_second(level + 1)
-                        unit = 'sec'
-
-                if level > 0:
-                    value = (f'Lv. {level}\n'
-                             f'**+{num} / {unit}**\n'
-                             f'Next: +{num_next} / {unit}\n'
-                             f'Cost: 🍪 {price}')
-                else:
-                    value = (f'Not purchased yet!\n'
-                             f'Cost: 🍪 {price}')
-
-                embed.add_field(name=name, value=value, inline=True)
-
-        await interaction.response.send_message(embed=embed)
 
 class Shop(d.ui.View):
-    pass
+    def __init__(self, purchase_options):
+        super().__init__()
+        self.add_item(UpgradeSelect(purchase_options))
+
+    @d.ui.button(label='Refresh', style=d.ButtonStyle.gray, emoji='🔄', row=1)
+    async def refresh(self, interaction: d.Interaction, button: d.ui.Button):
+        msg = await make_upgrades_message(interaction.user)
+        await interaction.message.edit(**msg)
+        await interaction.response.defer()
 
 class UpgradeSelect(d.ui.Select):
-    pass
+    def __init__(self, options: list[d.SelectOption]):
+        super().__init__(
+            custom_id='upgrade-select',
+            placeholder='Select an upgrade to purchase...',
+            options=options,
+            row=0
+        )
 
+    async def callback(self, interaction: d.Interaction):
+        async with bot.db:
+            upgrade = UPGRADES[int(self.values[0])]
+            level = bot.db.get_upgrade_level(interaction.user.id, upgrade.id)
+            print(f'Purchased {upgrade.name}')
+            msg = await make_upgrades_message(interaction.user)
+        await interaction.message.edit(**msg)
+        await interaction.response.send_message(
+            f'Purchased {upgrade.name} Lv. {level + 1}',
+            ephemeral=True
+        )
+
+    @staticmethod
+    async def get_options(user_id: int) -> list[d.SelectOption]:
+        async with bot.db:
+            balance = bot.db.get_cookies(user_id)
+            options = []
+            for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
+                price = upgrade.get_price(level + 1)
+                options.append(d.SelectOption(
+                    label=f'{upgrade.name} Lv. {level + 1}',
+                    description=f'🍪 {price}' if balance >= price else '🍪 Too expensive!',
+                    emoji=upgrade.emoji,
+                    value=upgrade.id
+                ))
+            return options
 
 async def make_clicker_message() -> dict | None:
     async with bot.db:
@@ -228,6 +233,46 @@ async def make_clicker_message() -> dict | None:
             content=content,
             view=view,
             embed=embed
+        )
+
+async def make_upgrades_message(user: d.User | d.Member) -> dict:
+    async with bot.db:
+        balance = bot.db.get_cookies(user.id)
+        content = f'## 🍪 {balance}'
+
+        embed = d.Embed(color=d.Color.blue())
+        embed.title = f"{user.display_name}'s upgrades"
+
+        cps = bot.db.get_cookies_per_second(user.id)
+        cpc = bot.db.get_cookies_per_click(user.id)
+        levels = bot.db.get_upgrade_levels(user.id)
+        embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
+
+        for upgrade in UPGRADES:
+            level = levels[upgrade.id]
+            price = upgrade.get_price(level + 1)
+            name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name}'
+            num = upgrade.get_cookies_per_unit(level)
+            num_next = upgrade.get_cookies_per_unit(level + 1)
+
+            if level > 0:
+                value = (f'Lv. {level}\n'
+                         f'**+{num} / {upgrade.unit}**\n'
+                         f'Next: +{num_next} / {upgrade.unit}\n'
+                         f'Cost: 🍪 {price}')
+            else:
+                value = (f'Not purchased yet!\n'
+                         f'Next: +{num_next} / {upgrade.unit}\n'
+                         f'Cost: 🍪 {price}')
+
+            embed.add_field(name=name, value=value, inline=True)
+
+        view = Shop(await UpgradeSelect.get_options(user.id))
+
+        return dict(
+            content=content,
+            embed=embed,
+            view=view
         )
 
 
