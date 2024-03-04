@@ -5,9 +5,9 @@ UPDATE_RATE = 10
 COOKIE_COOLDOWN = 20
 COOKIE_RANGE = (1, 1)
 UPGRADES: list[Upgrade] = [
-    PassiveUpgrade('PassiveUpgrade +1', 1),
-    PassiveUpgrade('PassiveUpgrade +25', 25),
-    ClickUpgrade('ClickUpgrade +5', 5),
+    PassiveUpgrade('Grandma', 1),
+    PassiveUpgrade('Bakery', 25),
+    ClickUpgrade('Clicker', 5),
 ]
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",

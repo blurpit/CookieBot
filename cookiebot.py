@@ -136,7 +136,7 @@ class CookieClicker(d.ui.View):
 
 class Shop(d.ui.View):
     def __init__(self, purchase_options):
-        super().__init__()
+        super().__init__(timeout=None)
         self.add_item(UpgradeSelect(purchase_options))
 
     @d.ui.button(label='Refresh', style=d.ButtonStyle.gray, emoji='🔄', row=1)
@@ -149,7 +149,7 @@ class UpgradeSelect(d.ui.Select):
     def __init__(self, options: list[d.SelectOption]):
         super().__init__(
             custom_id='upgrade-select',
-            placeholder='Select an upgrade to purchase...',
+            placeholder='Buy an upgrade...',
             options=options,
             row=0
         )
@@ -175,13 +175,15 @@ class UpgradeSelect(d.ui.Select):
     @staticmethod
     async def get_options(user_id: int) -> list[d.SelectOption]:
         async with bot.db:
-            balance = bot.db.get_cookies(user_id)
+            # balance = bot.db.get_cookies(user_id)
             options = []
             for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
                 price = upgrade.get_price(level + 1)
+                num = upgrade.get_cookies_per_unit(level + 1)
+
                 options.append(d.SelectOption(
-                    label=f'{upgrade.name} Lv. {level + 1}',
-                    description=f'🍪 {price}' if balance >= price else '🍪 Too expensive!',
+                    label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
+                    description=f'🍪 {price} | +{num} / {upgrade.unit}',
                     emoji=upgrade.emoji,
                     value=upgrade.id
                 ))
@@ -256,20 +258,16 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
 
         for upgrade in UPGRADES:
             level = levels[upgrade.id]
+            name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
             price = upgrade.get_price(level + 1)
-            name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name}'
             num = upgrade.get_cookies_per_unit(level)
-            num_next = upgrade.get_cookies_per_unit(level + 1)
 
             if level > 0:
-                value = (f'Lv. {level}\n'
-                         f'**+{num} / {upgrade.unit}**\n'
-                         f'Next: +{num_next} / {upgrade.unit}\n'
-                         f'Cost: 🍪 {price}')
+                value = (f'**+{num} / {upgrade.unit}**\n'
+                         f'Upgrade: 🍪 {price}')
             else:
                 value = (f'Not purchased yet!\n'
-                         f'Next: +{num_next} / {upgrade.unit}\n'
-                         f'Cost: 🍪 {price}')
+                         f'Buy: 🍪 {price}')
 
             embed.add_field(name=name, value=value, inline=True)
 
