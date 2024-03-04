@@ -40,7 +40,7 @@ class ClickUpgrade(Upgrade):
         return self.base_cpc * level
 
     def get_price(self, level):
-        return 100
+        return 1000
 
 class PassiveUpgrade(Upgrade):
     def __init__(self, name, base_cps: int):
@@ -58,4 +58,4 @@ class PassiveUpgrade(Upgrade):
         return self.base_cps * level
 
     def get_price(self, level):
-        return 100
+        return 420

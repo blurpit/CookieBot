@@ -120,6 +120,12 @@ class Database:
             for i, level in enumerate(self.get_upgrade_levels(user_id))
         )
 
+    def set_upgrade_level(self, user_id: int, upgrade_id: int, level: int):
+        """ Sets the level of an upgrade for a given user """
+        if str(user_id) not in self._data['upgrades']:
+            self._data['upgrades'][str(user_id)] = {}
+        self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
+
     # --- Clicker state --- #
 
     def get_participants_user_ids(self) -> Iterable[int]:

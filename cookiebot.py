@@ -155,14 +155,20 @@ class UpgradeSelect(d.ui.Select):
         )
 
     async def callback(self, interaction: d.Interaction):
+        user = interaction.user
         async with bot.db:
             upgrade = UPGRADES[int(self.values[0])]
-            level = bot.db.get_upgrade_level(interaction.user.id, upgrade.id)
-            print(f'Purchased {upgrade.name}')
-            msg = await make_upgrades_message(interaction.user)
+            level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
+            price = upgrade.get_price(level)
+
+            bot.db.set_upgrade_level(user.id, upgrade.id, level)
+            bot.db.add_cookies(user.id, -price)
+            print(f'Purchased {upgrade.name} lv. {level}')
+            msg = await make_upgrades_message(user)
+
         await interaction.message.edit(**msg)
         await interaction.response.send_message(
-            f'Purchased {upgrade.name} Lv. {level + 1}',
+            f'Purchased {upgrade.name} Lv. {level}',
             ephemeral=True
         )
 
