@@ -100,7 +100,7 @@ class CookieClicker(d.ui.View):
         super().__init__(timeout=None)
         self.button = self.children[0]
 
-    @d.ui.button(label='Cookie!', style=d.ButtonStyle.grey, emoji='🍪', custom_id='cookie-btn')
+    @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='🍪', custom_id='cookie-btn')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
@@ -126,6 +126,48 @@ class CookieClicker(d.ui.View):
         button.disabled = True
         bot.clicker_message_updater.restart() # force update after button press
         await interaction.response.send_message(msg, ephemeral=ephemeral)
+
+    @d.ui.button(label='My upgrades', style=d.ButtonStyle.gray, emoji='⬆️', custom_id='upgrades-btn')
+    async def upgrades(self, interaction: d.Interaction, button: d.ui.Button):
+        user = interaction.user
+        embed = d.Embed(color=d.Color.blue())
+        embed.title = f"{user.display_name}'s upgrades"
+
+        async with bot.db:
+            cps = bot.db.get_cookies_per_second(user.id)
+            cpc = bot.db.get_cookies_per_click(user.id)
+            levels = bot.db.get_upgrade_levels(user.id)
+            embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
+
+            for upgrade in UPGRADES:
+                level = levels[upgrade.id]
+                price = upgrade.get_price(level + 1)
+
+                if isinstance(upgrade, ClickUpgrade):
+                    name = f'{upgrade.id + 1}. 👆 {upgrade.name}'
+                    if level > 0:
+                        num = upgrade.get_cookies_per_click(level)
+                        num_next = upgrade.get_cookies_per_click(level + 1)
+                        unit = 'click'
+                elif isinstance(upgrade, PassiveUpgrade):
+                    name = f'{upgrade.id + 1}. 🕙 {upgrade.name}'
+                    if level > 0:
+                        num = upgrade.get_cookies_per_second(level)
+                        num_next = upgrade.get_cookies_per_second(level + 1)
+                        unit = 'sec'
+
+                if level > 0:
+                    value = (f'Lv. {level}\n'
+                             f'**+{num} / {unit}**\n'
+                             f'Next: +{num_next} / {unit}\n'
+                             f'Cost: 🍪 {price}')
+                else:
+                    value = (f'Not purchased yet!\n'
+                             f'Cost: 🍪 {price}')
+
+                embed.add_field(name=name, value=value, inline=True)
+
+        await interaction.response.send_message(embed=embed)
 
 class Shop(d.ui.View):
     pass
@@ -201,49 +243,6 @@ async def cookie(interaction: d.Interaction):
     await interaction.response.send_message(**await make_clicker_message())
     msg: d.Message = await interaction.original_response()
     await bot.set_clicker_message(msg)
-
-@bot.tree.command()
-async def upgrades(interaction: d.Interaction):
-    """ your upgrades """
-    user = interaction.user
-    embed = d.Embed(color=d.Color.blue())
-    embed.title = f"{user.display_name}'s upgrades"
-
-    async with bot.db:
-        cps = bot.db.get_cookies_per_second(user.id)
-        cpc = bot.db.get_cookies_per_click(user.id)
-        levels = bot.db.get_upgrade_levels(user.id)
-        embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
-
-        for upgrade in UPGRADES:
-            level = levels[upgrade.id]
-            price = upgrade.get_price(level + 1)
-
-            if isinstance(upgrade, ClickUpgrade):
-                name = f'{upgrade.id + 1}. 👆 {upgrade.name}'
-                if level > 0:
-                    num = upgrade.get_cookies_per_click(level)
-                    num_next = upgrade.get_cookies_per_click(level + 1)
-                    unit = 'click'
-            elif isinstance(upgrade, PassiveUpgrade):
-                name = f'{upgrade.id + 1}. 🕙 {upgrade.name}'
-                if level > 0:
-                    num = upgrade.get_cookies_per_second(level)
-                    num_next = upgrade.get_cookies_per_second(level + 1)
-                    unit = 'sec'
-
-            if level > 0:
-                value = (f'Lv. {level}\n'
-                         f'**+{num} / {unit}**\n'
-                         f'Next: +{num_next} / {unit}\n'
-                         f'Cost: 🍪 {price}')
-            else:
-                value = (f'Not purchased yet!\n'
-                         f'Cost: 🍪 {price}')
-
-            embed.add_field(name=name, value=value, inline=True)
-
-    await interaction.response.send_message(embed=embed)
 
 @bot.tree.command()
 async def jar(interaction: d.Interaction):
