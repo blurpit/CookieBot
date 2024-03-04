@@ -1,5 +1,4 @@
 import random
-from typing import Any
 
 import discord as d
 from discord.ext import tasks
@@ -121,7 +120,7 @@ class CookieClicker(d.ui.View):
                 bot.db.set_last_clicked_value(num)
                 print(f'Click! {interaction.user.name} got {num} cookies')
 
-                msg = f'{quote}\nYou got {num} cookie! Om nom nom nom'
+                msg = f'{quote}\nYou got **{bignum(num)}** cookies! Om nom nom nom'
                 ephemeral = True
 
         button.disabled = True
@@ -178,7 +177,7 @@ class UpgradeSelect(d.ui.Select):
             )
         else:
             await interaction.response.send_message(
-                f'Purchased **{upgrade.name} {roman(level)}**',
+                f'Purchased **{upgrade.name} {roman(level)}**!\nThank for the cookies!! nom nom nom',
                 ephemeral=True
             )
         await interaction.message.edit(**msg)
@@ -193,7 +192,7 @@ class UpgradeSelect(d.ui.Select):
 
                 options.append(d.SelectOption(
                     label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
-                    description=f'🍪 {price} | +{num} / {upgrade.unit}',
+                    description=f'🍪 {bignum(price)} ⬆️ +{bignum(num)} / {upgrade.unit}',
                     emoji=upgrade.emoji,
                     value=upgrade.id
                 ))
@@ -209,14 +208,14 @@ async def make_clicker_message() -> dict | None:
         bot.prev_cookie_count = total_cookies
 
         # Total cookie count display
-        content = f'# 🍪 {total_cookies}'
+        content = f'# 🍪 {bignum(total_cookies)}'
 
         # Last clicked
         last_clicked_user_id = bot.db.get_last_clicked_user_id()
         if last_clicked_user_id is not None:
             user = bot.get_user(last_clicked_user_id)
             value = bot.db.get_last_clicked_value()
-            content += f'\n👆 **+{value}** {user.display_name}'
+            content += f'\n👆 **+{bignum(value)}** {user.display_name}'
 
         # View and cookie button
         view = CookieClicker()
@@ -245,7 +244,7 @@ async def make_clicker_message() -> dict | None:
                 name = '🥉 ' + name
             else:
                 name = f'{i}. {name}'
-            embed.add_field(name=name, value=f'🍪 {cookies}', inline=True)
+            embed.add_field(name=name, value=f'🍪 {bignum(cookies)}', inline=True)
 
         return dict(
             content=content,
@@ -256,7 +255,7 @@ async def make_clicker_message() -> dict | None:
 async def make_upgrades_message(user: d.User | d.Member) -> dict:
     async with bot.db:
         balance = bot.db.get_cookies(user.id)
-        content = f'## 🍪 {balance}'
+        content = f'## 🍪 {bignum(balance)}'
 
         embed = d.Embed(color=d.Color.blue())
         embed.title = f"{user.display_name}'s upgrades"
@@ -264,7 +263,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
         cps = bot.db.get_cookies_per_second(user.id)
         cpc = bot.db.get_cookies_per_click(user.id)
         levels = bot.db.get_upgrade_levels(user.id)
-        embed.description = f'**👆 +{cpc} / click**\n**🕙 +{cps} / sec**'
+        embed.description = f'**👆 +{bignum(cpc)} / click**\n**🕙 +{bignum(cps)} / sec**'
 
         for upgrade in UPGRADES:
             level = levels[upgrade.id]
@@ -273,11 +272,11 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             num = upgrade.get_cookies_per_unit(level)
 
             if level > 0:
-                value = (f'**+{num} / {upgrade.unit}**\n'
-                         f'Upgrade: 🍪 {price}')
+                value = (f'**+{bignum(num)} / {upgrade.unit}**\n'
+                         f'Upgrade: 🍪 {bignum(price)}')
             else:
                 value = (f'Not purchased yet!\n'
-                         f'Buy: 🍪 {price}')
+                         f'Buy: 🍪 {bignum(price)}')
 
             embed.add_field(name=name, value=value, inline=True)
 
@@ -293,7 +292,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
 @bot.tree.command()
 async def hello(interaction: d.Interaction):
     """ wake up babe its time for another april fools bot """
-    await interaction.response.send_message(f'Hi, {interaction.user.mention}')
+    await interaction.response.send_message(f'Hellooo {interaction.user.mention}')
 
 @bot.tree.command()
 async def cookie(interaction: d.Interaction):
@@ -311,10 +310,10 @@ async def jar(interaction: d.Interaction):
 
     if cookies == 0:
         msg = f"{interaction.user.mention} no have any cookie!"
-    elif cookies < 500:
-        msg = f"{interaction.user.mention} has {cookies} cookies! not many cookie but better than no cookie!!"
+    elif cookies < 1000:
+        msg = f"{interaction.user.mention} has **🍪 {bignum(cookies)}** cookies! not many cookie but better than no cookie!!"
     else:
-        msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
+        msg = f"{interaction.user.mention} has **🍪 {bignum(cookies)}** cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
 @bot.tree.command()

@@ -1,4 +1,5 @@
 import math
+from config import BIGNUM_PLACES
 
 
 def time_str(seconds):
@@ -19,6 +20,28 @@ def short_time_str(seconds):
     else:
         return f'{seconds}s'
 
+_numnames = [
+    'million', 'billion', 'trillion', 'quadrillion', 'quintillion',
+    'sextillion', 'septillion', 'octillion', 'nonillion', 'decillion',
+    'undecillion', 'duodecillion', 'tredecillion', 'quattuordecillion',
+    'quindecillion', 'sexdecillion', 'septendecillion', 'octodecillion',
+    'novemdecillion', 'vigintillion'
+]
+def bignum(n: int):
+    if n < 0:
+        raise ValueError('tried to use bignum on negative number')
+    if n < 10_000_000:
+        return f'{n:,}'
+
+    exp = int(math.log10(n))
+    mag = exp // 3
+    index = mag - 2
+    if index < len(_numnames):
+        num = n / (1000 ** mag)
+        return f'{num:.{BIGNUM_PLACES}f} {_numnames[index]}'
+    else:
+        num = n / (10 ** exp)
+        return f'{num:.{BIGNUM_PLACES}f}e+{exp}'
 
 _C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
 _X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"]

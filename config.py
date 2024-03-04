@@ -4,6 +4,7 @@ GUILD_ID = 913924123405729812
 UPDATE_RATE = 10
 COOKIE_COOLDOWN = 20
 COOKIE_RANGE = (1, 1)
+BIGNUM_PLACES = 3
 UPGRADES: list[Upgrade] = [
     PassiveUpgrade('Grandma', 1),
     PassiveUpgrade('Bakery', 25),
