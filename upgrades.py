@@ -37,10 +37,15 @@ class ClickUpgrade(Upgrade):
         return 0
 
     def get_cookies_per_unit(self, level):
-        return self.base_cpc * 2**level
+        if level == 0:
+            return 0
+        return self.base_cpc * 2**(level - 1)
 
     def get_price(self, level):
-        return 100 * 2**level
+        # if level == 0:
+        #     return 0
+        # return 100 * 2**(level - 1)
+        return 1
 
 class PassiveUpgrade(Upgrade):
     def __init__(self, name, base_cps: int):
@@ -55,7 +60,12 @@ class PassiveUpgrade(Upgrade):
         return max(delta * self.get_cookies_per_unit(level), 0)
 
     def get_cookies_per_unit(self, level):
-        return self.base_cps * 2**level
+        if level == 0:
+            return 0
+        return self.base_cps * 2**(level - 1)
 
     def get_price(self, level):
-        return 100 * 2**level
+        # if level == 0:
+        #     return 0
+        # return 100 * 2**(level - 1)
+        return 1

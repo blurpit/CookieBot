@@ -128,6 +128,9 @@ class Database:
             self._data['upgrades'][str(user_id)] = {}
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
 
+    def delete_upgrades(self, user_id: int):
+        self._data['upgrades'].pop(str(user_id), None)
+
     # --- Clicker state --- #
 
     def get_participants_user_ids(self) -> Iterable[int]:

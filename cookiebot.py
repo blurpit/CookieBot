@@ -323,6 +323,15 @@ async def setcookies(interaction: d.Interaction, user: d.Member, cookies: int):
         bot.db.set_cookies(user.id, cookies)
     await interaction.response.send_message('done', ephemeral=True)
 
+@bot.tree.command()
+async def reset(interaction: d.Interaction, user: d.Member | None = None):
+    async with bot.db:
+        user_ids = [user.id] if user else bot.db.get_participants_user_ids()
+        for user_id in user_ids:
+            bot.db.set_cookies(user_id, 0)
+            bot.db.delete_upgrades(user_id)
+    await interaction.response.send_message('done', ephemeral=True)
+
 
 if __name__ == '__main__':
     with open('client_secret.txt') as file:
