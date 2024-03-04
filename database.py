@@ -76,11 +76,13 @@ class Database:
         """ Number of cookies a given user has """
         return self._data['cookies'].get(str(user_id), 0)
 
+    def set_cookies(self, user_id: int, cookies: int):
+        """ Sets the cookie count for a given user """
+        self._data['cookies'][str(user_id)] = cookies
+
     def add_cookies(self, user_id: int, cookies: int):
-        """ Adds a number of cookies to a given user's clicked cookies count """
-        if str(user_id) not in self._data['cookies']:
-            self._data['cookies'] = 0
-        self._data['cookies'][str(user_id)] += cookies
+        """ Adds cookies to a given user's count """
+        self.set_cookies(user_id, self.get_cookies(user_id) + cookies)
 
     # --- Upgrades --- #
 

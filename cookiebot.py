@@ -160,22 +160,32 @@ class UpgradeSelect(d.ui.Select):
             upgrade = UPGRADES[int(self.values[0])]
             level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
             price = upgrade.get_price(level)
+            balance = bot.db.get_cookies(user.id)
 
-            bot.db.set_upgrade_level(user.id, upgrade.id, level)
-            bot.db.add_cookies(user.id, -price)
-            print(f'Purchased {upgrade.name} lv. {level}')
+            if balance < price:
+                cant_afford = True
+            else:
+                cant_afford = False
+                bot.db.set_upgrade_level(user.id, upgrade.id, level)
+                bot.db.add_cookies(user.id, -price)
+                print(f'Purchased {upgrade.name} lv. {level}')
             msg = await make_upgrades_message(user)
 
+        if cant_afford:
+            await interaction.response.send_message(
+                "Hey!! You no have enough cookie for that!",
+                ephemeral=True
+            )
+        else:
+            await interaction.response.send_message(
+                f'Purchased **{upgrade.name} {roman(level)}**',
+                ephemeral=True
+            )
         await interaction.message.edit(**msg)
-        await interaction.response.send_message(
-            f'Purchased {upgrade.name} Lv. {level}',
-            ephemeral=True
-        )
 
     @staticmethod
     async def get_options(user_id: int) -> list[d.SelectOption]:
         async with bot.db:
-            # balance = bot.db.get_cookies(user_id)
             options = []
             for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
                 price = upgrade.get_price(level + 1)
@@ -306,6 +316,13 @@ async def jar(interaction: d.Interaction):
     else:
         msg = f"{interaction.user.mention} has {cookies} cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
+
+@bot.tree.command()
+async def setcookies(interaction: d.Interaction, user: d.Member, cookies: int):
+    """ [test] set cookies for a user """
+    async with bot.db:
+        bot.db.set_cookies(user.id, cookies)
+    await interaction.response.send_message('done', ephemeral=True)
 
 
 if __name__ == '__main__':
