@@ -18,7 +18,8 @@ class CookieBot(d.Client):
 
         super().__init__(intents=intents)
         self.tree = d.app_commands.CommandTree(self)
-        self.prev_cookie_count = -1
+        self.prev_cookie_count = 0
+        self.prev_cooldown_remaining = 0
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
@@ -198,14 +199,21 @@ class UpgradeSelect(d.ui.Select):
                 ))
             return options
 
-async def make_clicker_message() -> dict | None:
+async def make_clicker_message(allow_skip=True) -> dict | None:
     async with bot.db:
-        # Don't update the message if the cookie count hasn't changed
         total_cookies = bot.db.get_total_cookies()
-        if total_cookies == bot.prev_cookie_count:
-            print('Skipping update (cookie count has not changed)')
-            return None
+        cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
+
+        if allow_skip:
+            # Don't update the message if nothing has changed (cookie count is the
+            # same AND the cooldown did not expire)
+            if total_cookies == bot.prev_cookie_count and cooldown == bot.prev_cooldown_remaining:
+                print('Skipping update')
+                return None
+
+        # Update prev counts
         bot.prev_cookie_count = total_cookies
+        bot.prev_cooldown_remaining = cooldown
 
         # Total cookie count display
         content = f'# 🍪 {bignum(total_cookies)}'
@@ -219,32 +227,34 @@ async def make_clicker_message() -> dict | None:
 
         # View and cookie button
         view = CookieClicker()
-        cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
         if cooldown > 0:
             view.button.disabled = True
             view.button.label = f'{short_time_str(cooldown)} ...'
 
         # Leaderboard embed
-        embed = d.Embed(color=d.Color.blue())
-        embed.set_footer(text=f'updates every {short_time_str(UPDATE_RATE)}')
+        if len(bot.db.get_participants_user_ids()) == 0:
+            embed = d.utils.MISSING
+        else:
+            embed = d.Embed(color=d.Color.blue())
+            embed.set_footer(text=f'updates every {short_time_str(UPDATE_RATE)}')
 
-        entries = []
-        for user_id in bot.db.get_participants_user_ids():
-            user = bot.get_user(user_id)
-            cookies = bot.db.get_cookies(user_id)
-            entries.append((cookies, user.display_name))
-        entries.sort(reverse=True)
+            entries = []
+            for user_id in bot.db.get_participants_user_ids():
+                user = bot.get_user(user_id)
+                cookies = bot.db.get_cookies(user_id)
+                entries.append((cookies, user.display_name))
+            entries.sort(reverse=True)
 
-        for i, (cookies, name) in enumerate(entries[:25], 1):
-            if i == 1:
-                name = '🥇 ' + name
-            elif i == 2:
-                name = '🥈 ' + name
-            elif i == 3:
-                name = '🥉 ' + name
-            else:
-                name = f'{i}. {name}'
-            embed.add_field(name=name, value=f'🍪 {bignum(cookies)}', inline=True)
+            for i, (cookies, name) in enumerate(entries[:25], 1):
+                if i == 1:
+                    name = '🥇 ' + name
+                elif i == 2:
+                    name = '🥈 ' + name
+                elif i == 3:
+                    name = '🥉 ' + name
+                else:
+                    name = f'{i}. {name}'
+                embed.add_field(name=name, value=f'🍪 {bignum(cookies)}', inline=True)
 
         return dict(
             content=content,
@@ -297,8 +307,7 @@ async def hello(interaction: d.Interaction):
 @bot.tree.command()
 async def cookie(interaction: d.Interaction):
     """ send create cookie clicker message """
-    bot.prev_cookie_count = -1 # force update
-    await interaction.response.send_message(**await make_clicker_message())
+    await interaction.response.send_message(**await make_clicker_message(allow_skip=False))
     msg: d.Message = await interaction.original_response()
     await bot.set_clicker_message(msg)
 
@@ -328,8 +337,7 @@ async def reset(interaction: d.Interaction, user: d.Member | None = None):
     async with bot.db:
         user_ids = [user.id] if user else bot.db.get_participants_user_ids()
         for user_id in user_ids:
-            bot.db.set_cookies(user_id, 0)
-            bot.db.delete_upgrades(user_id)
+            bot.db.delete_participant(user_id)
     await interaction.response.send_message('done', ephemeral=True)
 
 

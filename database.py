@@ -84,6 +84,13 @@ class Database:
         """ Adds cookies to a given user's count """
         self.set_cookies(user_id, self.get_cookies(user_id) + cookies)
 
+    def delete_participant(self, user_id: int):
+        self._data['cookies'].pop(str(user_id), None)
+        self._data['upgrades'].pop(str(user_id), None)
+        if user_id == self._data['last_clicked_user_id']:
+            self._data['last_clicked_user_id'] = None
+            self._data['last_clicked_value'] = 0
+
     # --- Upgrades --- #
 
     def get_upgrade_levels(self, user_id: int) -> list[int]:
@@ -128,14 +135,11 @@ class Database:
             self._data['upgrades'][str(user_id)] = {}
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
 
-    def delete_upgrades(self, user_id: int):
-        self._data['upgrades'].pop(str(user_id), None)
-
     # --- Clicker state --- #
 
-    def get_participants_user_ids(self) -> Iterable[int]:
+    def get_participants_user_ids(self) -> list[int]:
         """ Set of user_ids of people who have clicked the button before """
-        return map(int, self._data['cookies'].keys())
+        return list(map(int, self._data['cookies'].keys()))
 
     def get_last_clicked_time(self) -> datetime:
         """ Timestamp of when the button was last clicked by someone """
