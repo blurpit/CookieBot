@@ -132,6 +132,9 @@ class CookieClicker(d.ui.View):
     async def upgrades(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
         await interaction.response.send_message(**await make_upgrades_message(user))
+        message: d.Message = await interaction.original_response()
+        async with bot.db:
+            bot.db.set_upgrade_message_owner_id(message.id, user.id)
 
 
 class Shop(d.ui.View):
@@ -155,23 +158,36 @@ class UpgradeSelect(d.ui.Select):
         )
 
     async def callback(self, interaction: d.Interaction):
-        user = interaction.user
         async with bot.db:
-            upgrade = UPGRADES[int(self.values[0])]
-            level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
-            price = upgrade.get_price(level)
-            balance = bot.db.get_cookies(user.id)
+            owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
+            user = bot.get_user(owner_id)
 
-            if balance < price:
-                cant_afford = True
+            # Check that this user owns the message
+            if owner_id != interaction.user.id:
+                fail = 'wrong_user'
+                msg = None
             else:
-                cant_afford = False
-                bot.db.set_upgrade_level(user.id, upgrade.id, level)
-                bot.db.add_cookies(user.id, -price)
-                print(f'Purchased {upgrade.name} lv. {level}')
-            msg = await make_upgrades_message(user)
+                upgrade = UPGRADES[int(self.values[0])]
+                level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
+                price = upgrade.get_price(level)
+                balance = bot.db.get_cookies(user.id)
 
-        if cant_afford:
+                # Check that the user has enough cookies
+                if balance < price:
+                    fail = 'cant_afford'
+                else:
+                    bot.db.set_upgrade_level(user.id, upgrade.id, level)
+                    bot.db.add_cookies(user.id, -price)
+                    print(f'Purchased {upgrade.name} lv. {level}')
+                    fail = None
+                msg = await make_upgrades_message(user)
+
+        if fail == 'wrong_user':
+            await interaction.response.send_message(
+                f"Hey those upgrades are for **{user.display_name}**! It not nice to take other people's cookies.",
+                ephemeral=True
+            )
+        elif fail == 'cant_afford':
             await interaction.response.send_message(
                 "Hey!! You no have enough cookie for that!",
                 ephemeral=True
@@ -181,7 +197,8 @@ class UpgradeSelect(d.ui.Select):
                 f'Purchased **{upgrade.name} {roman(level)}**!\nThank for the cookies!! nom nom nom',
                 ephemeral=True
             )
-        await interaction.message.edit(**msg)
+        if msg is not None:
+            await interaction.message.edit(**msg)
 
     @staticmethod
     async def get_options(user_id: int) -> list[d.SelectOption]:

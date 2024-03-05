@@ -1,7 +1,6 @@
 import asyncio
 import json
 from datetime import datetime
-from typing import Iterable
 
 from config import UPGRADES
 from upgrades import ClickUpgrade, PassiveUpgrade
@@ -42,11 +41,12 @@ class Database:
         self._data.setdefault('upgrades', {})
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
+        self._data.setdefault('upgrade_message_owner_ids', {})
         self._data.setdefault('last_clicked_time', _1970)
         self._data.setdefault('last_clicked_user_id', None)
         self._data.setdefault('last_clicked_value', 0)
 
-    # --- Clicker message --- #
+    # --- Message storage --- #
     def get_clicker_message_id(self) -> int | None:
         """ ID of the message with the cookie button and leaderboard """
         return self._data['clicker_message_id']
@@ -55,13 +55,21 @@ class Database:
         """ ID of the channel the clicker message is in """
         return self._data['clicker_channel_id']
 
-    def set_clicker_message_id(self, message_id: int):
+    def set_clicker_message_id(self, message_id: int | None):
         """ Set the clicker message id """
         self._data['clicker_message_id'] = message_id
 
-    def set_clicker_channel_id(self, channel_id: int):
+    def set_clicker_channel_id(self, channel_id: int | None):
         """ Set the clicker channel id """
         self._data['clicker_channel_id'] = channel_id
+
+    def get_upgrade_message_owner_id(self, message_id: int) -> int | None:
+        """ ID of the user who owns the given upgrade message """
+        return self._data['upgrade_message_owner_ids'].get(str(message_id), None)
+
+    def set_upgrade_message_owner_id(self, message_id: int | None, user_id: int):
+        """ Set the owner of the given upgrade message """
+        self._data['upgrade_message_owner_ids'][str(message_id)] = user_id
 
     # --- Cookie counts --- #
 
@@ -87,6 +95,7 @@ class Database:
     def delete_participant(self, user_id: int):
         self._data['cookies'].pop(str(user_id), None)
         self._data['upgrades'].pop(str(user_id), None)
+        self._data['upgrade_message_ids'].pop(str(user_id), None)
         if user_id == self._data['last_clicked_user_id']:
             self._data['last_clicked_user_id'] = None
             self._data['last_clicked_value'] = 0
