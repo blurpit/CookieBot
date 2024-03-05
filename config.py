@@ -2,14 +2,21 @@ from upgrades import ClickUpgrade, PassiveUpgrade, Upgrade
 
 GUILD_ID = 913924123405729812
 UPDATE_RATE = 10
-COOKIE_COOLDOWN = 20
+COOKIE_COOLDOWN = 60
 COOKIE_RANGE = (1, 1)
 BIGNUM_PLACES = 3
+
 UPGRADES: list[Upgrade] = [
-    PassiveUpgrade('Grandma', 1),
-    PassiveUpgrade('Bakery', 25),
-    ClickUpgrade('Clicker', 5),
+    ClickUpgrade  ('Facebook Like Button',        1,    100),
+    PassiveUpgrade('Chef Freako',                 1,    100),
+    PassiveUpgrade('Oven Eat the Food',           5,    1000),
+    PassiveUpgrade('Astley Automator',            50,   10000),
+    PassiveUpgrade('Home Depot Bakery',           300,  50000),
+    PassiveUpgrade('Crypto Cookie Castle',        1500, 200000),
+    PassiveUpgrade('Cookie Construction Company', 5000, 500000),
+    PassiveUpgrade('Blurbot v3.0',                3,    1000001),
 ]
+
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",
     # "Om nom nom nom.",
