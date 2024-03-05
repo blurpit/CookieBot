@@ -303,10 +303,10 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
 
             if level > 0:
                 value = (f'**+{bignum(num)} / {upgrade.unit}**\n'
-                         f'Upgrade: 🍪 {bignum(price)}')
+                         f'Cost: 🍪 {bignum(price)}')
             else:
                 value = (f'Not purchased yet!\n'
-                         f'Buy: 🍪 {bignum(price)}')
+                         f'Cost: 🍪 {bignum(price)}')
 
             embed.add_field(name=name, value=value, inline=True)
 
