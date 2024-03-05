@@ -144,8 +144,11 @@ class Shop(d.ui.View):
 
     @d.ui.button(label='Refresh', style=d.ButtonStyle.gray, emoji='🔄', row=1)
     async def refresh(self, interaction: d.Interaction, button: d.ui.Button):
-        msg = await make_upgrades_message(interaction.user)
-        await interaction.message.edit(**msg)
+        async with bot.db:
+            owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
+        if owner_id == interaction.user.id:
+            msg = await make_upgrades_message(interaction.user)
+            await interaction.message.edit(**msg)
         await interaction.response.defer()
 
 class UpgradeSelect(d.ui.Select):
