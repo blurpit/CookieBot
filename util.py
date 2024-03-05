@@ -38,10 +38,12 @@ def bignum(n: int):
     index = mag - 2
     if index < len(_numnames):
         num = n / (1000 ** mag)
-        return f'{num:.{BIGNUM_PLACES}f} {_numnames[index]}'
+        num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
+        return f'{num_str} {_numnames[index]}'
     else:
         num = n / (10 ** exp)
-        return f'{num:.{BIGNUM_PLACES}f}e+{exp}'
+        num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
+        return f'{num_str}e+{exp}'
 
 _C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
 _X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"]
