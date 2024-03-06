@@ -147,7 +147,7 @@ class Database:
     def does_someone_own(self, upgrade_id: int):
         """ True if anyone has purchased the given upgrade """
         for purchases in self._data['upgrades'].values():
-            if upgrade_id in purchases:
+            if str(upgrade_id) in purchases:
                 return True
         return False
 
