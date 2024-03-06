@@ -2,23 +2,28 @@ import math
 from config import BIGNUM_PLACES
 
 
-def time_str(seconds):
-    seconds = math.ceil(seconds)
-    if seconds > 3600:
-        return f'{seconds // 3600} hour'
-    elif seconds > 60:
-        return f'{seconds // 60} minute'
-    else:
-        return f'{seconds} second'
+def time_str(s):
+    seconds = math.ceil(s)
+    y = seconds // (60 * 60 * 24 * 365)
+    d = seconds // (60 * 60 * 24) % 365
+    h = seconds // (60 * 60) % 24
+    m = seconds // 60 % 60
+    s = seconds % 60
 
-def short_time_str(seconds):
-    seconds = math.ceil(seconds)
-    if seconds > 3600:
-        return f'{seconds // 3600}h'
-    elif seconds > 60:
-        return f'{seconds // 60}m'
-    else:
-        return f'{seconds}s'
+    strs = [f'{s}s']
+    if m > 0:
+        strs.append(f'{m}m')
+    if h > 0:
+        strs.append(f'{h}h')
+    if d > 0:
+        strs.append(f'{d}d')
+    if y > 0:
+        y = bignum(y)
+        if not y[-1].isdigit():
+            # add a space if there's a number label
+            y += ' '
+        strs.append(f'{y}yr')
+    return ' '.join(reversed(strs))
 
 _numnames = [
     'million', 'billion', 'trillion', 'quadrillion', 'quintillion',

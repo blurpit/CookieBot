@@ -151,6 +151,37 @@ class CookieClicker(d.ui.View):
         async with bot.db:
             bot.db.set_upgrade_message_owner_id(message.id, user.id)
 
+    @d.ui.button(label='My progress', style=d.ButtonStyle.gray, emoji='📈', custom_id='progress-btn')
+    async def progress(self, interaction: d.Interaction, button: d.ui.Button):
+        user = interaction.user
+        async with bot.db:
+            cps = bot.db.get_cookies_per_second(user.id)
+            cookies = bot.db.get_cookies(user.id)
+
+        if cookies > 10**100:
+            # 1 Googol reached!
+            msg = 'SO MANY COOKIES!!!! Remember cookie taste better when shared with friends!'
+        elif cps == 0:
+            # Infinity time left
+            msg = "You're not making any cookies! Click button and buy upgrades to make cookie faster!"
+        else:
+            seconds = (10 ** 100 - cookies) // cps
+            msg = f"At current cookie rate, you will reach **🍪 1 googol** in **{time_str(seconds)}**!"
+            if seconds < 60*60:
+                # Less than 1 hour left
+                msg += ' So many cookie so fast!! Almost there, keep going!!'
+            elif seconds < 60*60*24:
+                # Less than 1 day left
+                msg += ' Be patient!'
+            elif seconds < 60*60*24*7:
+                # Less than 1 week left
+                msg += " You making cookies so fast and still so long? Me think more upgrades!"
+            else:
+                # More than 1 week left
+                msg += (' Too long... Me no want to wait that long, you that patient? '
+                        'You should make cookie faster!')
+
+        await interaction.response.send_message(f'{user.mention} {msg}')
 
 class Shop(d.ui.View):
     def __init__(self, purchase_options):
@@ -266,14 +297,14 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
         view = CookieClicker()
         if cooldown > 0:
             view.button.disabled = True
-            view.button.label = f'{short_time_str(cooldown)} ...'
+            view.button.label = f'{time_str(cooldown)} ...'
 
         # Leaderboard embed
         if len(bot.db.get_participants_user_ids()) == 0:
             embed = d.utils.MISSING
         else:
             embed = d.Embed(color=d.Color.blue())
-            embed.set_footer(text=f'updates every {short_time_str(UPDATE_RATE)}')
+            embed.set_footer(text=f'updates every {time_str(UPDATE_RATE)}')
 
             entries = []
             for user_id in bot.db.get_participants_user_ids():
