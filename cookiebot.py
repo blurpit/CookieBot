@@ -209,6 +209,8 @@ class UpgradeSelect(d.ui.Select):
     async def callback(self, interaction: d.Interaction):
         async with bot.db:
             owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
+            if owner_id is None:
+                return # Message isn't saved, just don't respond.
             user = bot.get_user(owner_id)
 
             # Check that this user owns the message
