@@ -65,3 +65,13 @@ def roman(n: int):
     tens = _X[(n % 100) // 10]
     ones = _I[n % 10]
     return hundreds + tens + ones
+
+def num_suffix(n: int):
+    digit = str(n)[-1]
+    if digit == '1':
+        return 'st'
+    elif digit == '2':
+        return 'nd'
+    elif digit == '3':
+        return 'rd'
+    return 'th'
