@@ -7,14 +7,14 @@ COOKIE_RANGE = (1, 1)
 BIGNUM_PLACES = 3
 
 UPGRADES: list[Upgrade] = [
-    ClickUpgrade  ('👍', 'Facebook Like Button',        1,    100),
-    PassiveUpgrade('👨‍🍳', 'Chef Freako',                 1,    100),
-    PassiveUpgrade('🔥', 'Oven Eat the Food',           5,    1000),
-    PassiveUpgrade('🎤', 'Astley Automator',            50,   10000),
-    PassiveUpgrade('🛠️', 'Home Depot Bakery',           300,  50000),
-    PassiveUpgrade('🏰', 'Crypto Cookie Castle',        1500, 200000),
-    PassiveUpgrade('🏗️', 'Cookie Construction Company', 5000, 500000),
-    PassiveUpgrade('🐢', 'Blurbot v3.0',                3,    1000001),
+    ClickUpgrade  ('👍', 'Facebook Like Button',         1,    100),
+    PassiveUpgrade('👨‍🍳', 'Chef Freako',                  1,    100),
+    PassiveUpgrade('🔥', 'Oven Eat the Food',            5,    1000),
+    PassiveUpgrade('🎤', 'Astley Automator',             50,   10000),
+    PassiveUpgrade('🛠️', 'Home Depot Bakery',            300,  50000),
+    PassiveUpgrade('🏰', 'Crypto Cookie Castle',         1500, 200000),
+    PassiveUpgrade('🏗️', 'Cookie Construction Company',  5000, 500000),
+    PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', 3,    1000001, hide=True),
 ]
 
 COOKIE_QUOTES = [

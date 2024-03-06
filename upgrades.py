@@ -10,10 +10,11 @@ def _exp(coeff, base, e):
     return int(coeff * pow(base, e))
 
 class Upgrade(ABC):
-    def __init__(self, emoji: str, name: str, unit: str):
+    def __init__(self, emoji: str, name: str, unit: str, hide=False):
         self.emoji = emoji
         self.name = name
         self.unit = unit
+        self.hide = hide
         global _id_counter
         self.id = _id_counter
         _id_counter += 1
@@ -35,8 +36,8 @@ class Upgrade(ABC):
         pass
 
 class ClickUpgrade(Upgrade):
-    def __init__(self, emoji, name, base_cpc: int, base_price: int):
-        super().__init__(emoji, name, 'click')
+    def __init__(self, emoji, name, base_cpc: int, base_price: int, hide=False):
+        super().__init__(emoji, name, 'click', hide=hide)
         self.base_cpc = base_cpc
         self.base_price = base_price
 
@@ -54,8 +55,8 @@ class ClickUpgrade(Upgrade):
         return _exp(self.base_price, 10, level-1)
 
 class PassiveUpgrade(Upgrade):
-    def __init__(self, emoji, name, base_cps: int, base_price: int):
-        super().__init__(emoji, name, 'sec')
+    def __init__(self, emoji, name, base_cps: int, base_price: int, hide=False):
+        super().__init__(emoji, name, 'sec', hide)
         self.base_cps = base_cps
         self.base_price = base_price
 

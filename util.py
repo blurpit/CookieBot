@@ -27,9 +27,11 @@ _numnames = [
     'quindecillion', 'sexdecillion', 'septendecillion', 'octodecillion',
     'novemdecillion', 'vigintillion'
 ]
-def bignum(n: int):
-    if n < 0:
-        raise ValueError('tried to use bignum on negative number')
+def bignum(n):
+    if not isinstance(n, int):
+        return n
+    neg = '-' if n < 0 else ''
+    n = abs(n)
     if n < 10_000_000:
         return f'{n:,}'
 
@@ -39,22 +41,22 @@ def bignum(n: int):
     if index < len(_numnames):
         num = n / (1000 ** mag)
         num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
-        return f'{num_str} {_numnames[index]}'
+        return f'{neg}{num_str} {_numnames[index]}'
     else:
         num = n / (10 ** exp)
         num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
-        return f'{num_str}e+{exp}'
+        return f'{neg}{num_str}e+{exp}'
 
 _C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
 _X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"]
 _I = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"]
-def roman(num):
-    if num == 0:
+def roman(n: int):
+    if n == 0:
         return ''
-    elif not (0 < num < 1000):
-        return str(num)
+    elif not (0 < n < 1000):
+        return str(n)
 
-    hundreds = _C[(num % 1000) // 100]
-    tens = _X[(num % 100) // 10]
-    ones = _I[num % 10]
+    hundreds = _C[(n % 1000) // 100]
+    tens = _X[(n % 100) // 10]
+    ones = _I[n % 10]
     return hundreds + tens + ones

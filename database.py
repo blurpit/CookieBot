@@ -144,6 +144,13 @@ class Database:
             self._data['upgrades'][str(user_id)] = {}
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
 
+    def does_someone_own(self, upgrade_id: int):
+        """ True if anyone has purchased the given upgrade """
+        for purchases in self._data['upgrades'].values():
+            if upgrade_id in purchases:
+                return True
+        return False
+
     # --- Clicker state --- #
 
     def get_participants_user_ids(self) -> list[int]:

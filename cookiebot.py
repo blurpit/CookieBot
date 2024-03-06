@@ -210,6 +210,8 @@ class UpgradeSelect(d.ui.Select):
             for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
                 price = upgrade.get_price(level + 1)
                 num = upgrade.get_cookies_per_unit(level + 1)
+                if upgrade.hide and not bot.db.does_someone_own(upgrade.id):
+                    num = '???'
 
                 options.append(d.SelectOption(
                     label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
@@ -300,6 +302,8 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
             price = upgrade.get_price(level + 1)
             num = upgrade.get_cookies_per_unit(level)
+            if upgrade.hide and not bot.db.does_someone_own(upgrade.id):
+                num = '???'
 
             if level > 0:
                 value = (f'**+{bignum(num)} / {upgrade.unit}**\n'
