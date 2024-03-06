@@ -397,9 +397,9 @@ async def jar(interaction: d.Interaction):
     if cookies == 0:
         msg = f"{interaction.user.mention} no have any cookie!"
     elif cookies < 1000:
-        msg = f"{interaction.user.mention} has **🍪 {bignum(cookies)}** cookies! not many cookie but better than no cookie!!"
+        msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies! not many cookie but better than no cookie!!"
     else:
-        msg = f"{interaction.user.mention} has **🍪 {bignum(cookies)}** cookies!! So many! om nom nom nom"
+        msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
 @bot.tree.command()
