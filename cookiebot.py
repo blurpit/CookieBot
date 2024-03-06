@@ -131,7 +131,7 @@ class CookieClicker(d.ui.View):
 
                 num = base_num + bot.db.get_cookies_per_click(user_id)
                 bot.db.add_cookies(user_id, num)
-                bot.db.update_last_clicked()
+                bot.db.set_last_clicked_time()
                 bot.db.set_last_clicked_user_id(user_id)
                 bot.db.set_last_clicked_value(num)
                 print(f'Click! {interaction.user.name} got {num} cookies')
@@ -303,7 +303,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
 
         # Leaderboard embed
         if len(bot.db.get_participants_user_ids()) == 0:
-            embed = d.utils.MISSING
+            embed = None
         else:
             embed = d.Embed(color=d.Color.blue())
             embed.set_footer(text=f'updates every {time_str(UPDATE_RATE)}')
@@ -415,6 +415,8 @@ async def reset(interaction: d.Interaction, user: d.Member | None = None):
         user_ids = [user.id] if user else bot.db.get_participants_user_ids()
         for user_id in user_ids:
             bot.db.delete_participant(user_id)
+        bot.db.set_last_clicked_user_id(None)
+        bot.db.set_last_clicked_value(0)
     await interaction.response.send_message('done', ephemeral=True)
 
 

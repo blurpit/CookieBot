@@ -160,7 +160,7 @@ class Database:
         """ Timestamp of when the button was last clicked by someone """
         return datetime.fromisoformat(self._data['last_clicked_time'])
 
-    def update_last_clicked(self, timestamp: datetime = None) -> datetime:
+    def set_last_clicked_time(self, timestamp: datetime = None) -> datetime:
         """ Set the timestamp of when the button was last clicked """
         if timestamp is None:
             timestamp = datetime.utcnow()
@@ -171,7 +171,7 @@ class Database:
         """ User id of the person who last clicked the button """
         return self._data['last_clicked_user_id']
 
-    def set_last_clicked_user_id(self, user_id: int):
+    def set_last_clicked_user_id(self, user_id: int | None):
         """ Set the user id of the person who last clicked the button """
         self._data['last_clicked_user_id'] = user_id
 
