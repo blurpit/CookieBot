@@ -23,6 +23,8 @@ class CookieBot(d.Client):
 
     async def on_ready(self):
         print(f'Logged in as {self.user}!')
+        activity = d.Activity(type=d.ActivityType.watching, name='the oven')
+        await self.change_presence(activity=activity)
         await self.init_clicker_message()
 
     async def setup_hook(self):
