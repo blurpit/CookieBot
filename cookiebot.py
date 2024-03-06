@@ -56,11 +56,18 @@ class CookieBot(d.Client):
         async with self.db:
             channel_id = self.db.get_clicker_channel_id()
             msg_id = self.db.get_clicker_message_id()
-            if msg_id is not None:
+
+        if msg_id is not None:
+            try:
                 channel = bot.get_channel(channel_id)
                 self.message = await channel.fetch_message(msg_id)
                 self.clicker_message_updater.start()
                 print(f'Initialized cookie message {msg_id}')
+            except d.NotFound:
+                print('Clicker message was deleted!')
+                async with bot.db:
+                    bot.db.set_clicker_message_id(None)
+                    bot.db.set_clicker_channel_id(None)
 
     @tasks.loop(seconds=1)
     async def cookie_updater(self):
@@ -81,9 +88,17 @@ class CookieBot(d.Client):
     @tasks.loop(seconds=UPDATE_RATE)
     async def clicker_message_updater(self):
         print('Updating clicker')
-        msg = await  make_clicker_message()
+        msg = await make_clicker_message()
         if msg is not None:
-            await self.message.edit(**msg)
+            try:
+                await self.message.edit(**msg)
+            except d.NotFound:
+                print('Clicker message was deleted!')
+                self.clicker_message_updater.stop()
+                self.message = None
+                async with bot.db:
+                    bot.db.set_clicker_channel_id(None)
+                    bot.db.set_clicker_message_id(None)
 
     @clicker_message_updater.before_loop
     async def before_cookie_updater(self):
