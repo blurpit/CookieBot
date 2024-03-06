@@ -95,7 +95,6 @@ class Database:
     def delete_participant(self, user_id: int):
         self._data['cookies'].pop(str(user_id), None)
         self._data['upgrades'].pop(str(user_id), None)
-        self._data['upgrade_message_ids'].pop(str(user_id), None)
         if user_id == self._data['last_clicked_user_id']:
             self._data['last_clicked_user_id'] = None
             self._data['last_clicked_value'] = 0
