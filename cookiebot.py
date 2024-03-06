@@ -329,10 +329,15 @@ async def hello(interaction: d.Interaction):
     await interaction.response.send_message(f'Hellooo {interaction.user.mention}')
 
 @bot.tree.command()
-async def cookie(interaction: d.Interaction):
+async def cookie(interaction: d.Interaction, channel: d.TextChannel | None):
     """ send create cookie clicker message """
-    await interaction.response.send_message(**await make_clicker_message(allow_skip=False))
-    msg: d.Message = await interaction.original_response()
+    msg_data = await make_clicker_message(allow_skip=False)
+    if channel is None:
+        await interaction.response.send_message(**msg_data)
+        msg: d.Message = await interaction.original_response()
+    else:
+        msg: d.Message = await channel.send(**msg_data)
+        await interaction.response.send_message('done', ephemeral=True)
     await bot.set_clicker_message(msg)
 
 @bot.tree.command()
