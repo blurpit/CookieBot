@@ -8,6 +8,8 @@ from database import Database
 from util import *
 
 
+# --- Bot --- #
+
 class CookieBot(d.Client):
     def __init__(self):
         self.db = Database('data/db.json')
@@ -113,12 +115,14 @@ class CookieBot(d.Client):
 
 bot = CookieBot()
 
+# --- Views --- #
+
 class CookieClicker(d.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.button = self.children[0]
 
-    @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='🍪', custom_id='cookie-btn')
+    @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='<:emoji3:1218668546544894053>', custom_id='cookie-btn')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
@@ -156,8 +160,8 @@ class CookieClicker(d.ui.View):
     @d.ui.button(label='My progress', style=d.ButtonStyle.gray, emoji='📈', custom_id='progress-btn')
     async def progress(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
-        msg = make_progess_message(user)['content']
-        await interaction.response.send_message(f'{user.mention} {msg}')
+        msg = await make_progess_message(user)
+        await interaction.response.send_message(f"{user.mention} {msg['content']}")
 
 class Shop(d.ui.View):
     def __init__(self, purchase_options):
@@ -244,6 +248,8 @@ class UpgradeSelect(d.ui.Select):
                     value=upgrade.id
                 ))
             return options
+
+# --- Complex message makers --- #
 
 async def make_clicker_message(allow_skip=True) -> dict | None:
     async with bot.db:
@@ -346,7 +352,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             view=view
         )
 
-def make_progess_message(user: d.User) -> dict:
+async def make_progess_message(user: d.User) -> dict:
     async with bot.db:
         cps = bot.db.get_cookies_per_second(user.id)
         cookies = bot.db.get_cookies(user.id)
@@ -430,7 +436,7 @@ async def jar(interaction: d.Interaction):
 @bot.tree.command()
 async def progress(interaction: d.Interaction):
     """ your cookie progress """
-    msg = make_progess_message(interaction.user)
+    msg = await make_progess_message(interaction.user)
     await interaction.response.send_message(**msg)
 
 # --- Dev commands --- #
