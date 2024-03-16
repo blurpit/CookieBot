@@ -1,4 +1,5 @@
 import random
+from typing import Any
 
 import discord as d
 from discord.ext import tasks
@@ -33,7 +34,8 @@ class CookieBot(d.Client):
         # Sync slash commands
         self.tree.copy_global_to(guild=GUILD)
         await self.tree.sync(guild=GUILD)
-        await self.tree.sync(guild=DEV_GUILD)
+        if GUILD != DEV_GUILD:
+            await self.tree.sync(guild=DEV_GUILD)
         print('Commands synced.')
 
         # Add persistent views
@@ -442,8 +444,9 @@ async def progress(interaction: d.Interaction):
 # --- Dev commands --- #
 
 @bot.tree.command()
-async def start_clicker(interaction: d.Interaction, channel_id: int):
+async def start_clicker(interaction: d.Interaction, channel_id: str):
     """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
+    channel_id = int(channel_id)
     channel = bot.get_channel(channel_id)
     msg_data = await make_clicker_message(allow_skip=False)
     msg: d.Message = await channel.send(**msg_data)
@@ -451,8 +454,9 @@ async def start_clicker(interaction: d.Interaction, channel_id: int):
     await interaction.response.send_message(f'new clicker message sent in {channel}')
 
 @bot.tree.command(guild=DEV_GUILD)
-async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: int):
+async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
     """ [Dev] set cookies for a given user. """
+    cookies = int(cookies)
     async with bot.db:
         bot.db.set_cookies(user.id, cookies)
     await interaction.response.send_message(f'set {user} cookies to {cookies}')
