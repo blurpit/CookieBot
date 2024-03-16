@@ -156,61 +156,7 @@ class CookieClicker(d.ui.View):
     @d.ui.button(label='My progress', style=d.ButtonStyle.gray, emoji='📈', custom_id='progress-btn')
     async def progress(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
-        async with bot.db:
-            cps = bot.db.get_cookies_per_second(user.id)
-            cookies = bot.db.get_cookies(user.id)
-            ranks = [
-                (bot.db.get_cookies(user_id), user_id)
-                for user_id in bot.db.get_participants_user_ids()
-            ]
-            ranks.sort(reverse=True)
-
-        # Time to reach 1 googol
-        if cookies > 10**100:
-            # 1 Googol reached!
-            msg = 'SO MANY COOKIES!!!! Remember cookie taste better when shared with friends!'
-        elif cps == 0:
-            # Infinity time left
-            msg = "You're not making any cookies! Click button and buy upgrades to make cookie faster!"
-        else:
-            seconds = (10 ** 100 - cookies) // cps
-            msg = f"At current cookie rate, you will reach **🍪 1 googol** in **{time_str(seconds)}**!"
-            if seconds < 60*60:
-                # Less than 1 hour left
-                msg += ' So many cookie so fast!! Almost there, keep going!!'
-            elif seconds < 60*60*24:
-                # Less than 1 day left
-                msg += ' Be patient!'
-            elif seconds < 60*60*24*7:
-                # Less than 1 week left
-                msg += " You making cookies so fast and still so long? Me think more upgrades!"
-            else:
-                # More than 1 week left
-                msg += (' Too long... Me no want to wait that long, you that patient? '
-                        'You should make cookie faster!')
-
-        # Time to overtake next place
-        msg += '\n\n'
-        i = 0
-        for i, (_, user_id) in enumerate(ranks):
-            if user_id == user.id:
-                break
-        if i == 0:
-            # First place
-            msg += "🏆 You're in first place! Me and everyone else very proud of you."
-        else:
-            cookies2, user_id2 = ranks[i-1]
-            user2 = bot.get_user(user_id2)
-            cookie_diff = cookies2 - cookies + 1
-            msg += (f"You're in **{i+1}{num_suffix(i+1)}** place! You need **🍪 {bignum(cookie_diff)}** "
-                    f"to overtake **{user2.display_name}** for {i}{num_suffix(i)} place!")
-            if cps > 0:
-                seconds = cookie_diff // cps
-                msg += (f" At current cookie rate, it'll take only **{time_str(seconds)}** to get "
-                        f"that many cookies!")
-            msg += " Keep going!"
-
-
+        msg = make_progess_message(user)['content']
         await interaction.response.send_message(f'{user.mention} {msg}')
 
 class Shop(d.ui.View):
@@ -400,24 +346,72 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             view=view
         )
 
+def make_progess_message(user: d.User) -> dict:
+    async with bot.db:
+        cps = bot.db.get_cookies_per_second(user.id)
+        cookies = bot.db.get_cookies(user.id)
+        ranks = [
+            (bot.db.get_cookies(user_id), user_id)
+            for user_id in bot.db.get_participants_user_ids()
+        ]
+
+    # Time to reach 1 googol
+    if cookies > 10 ** 100:
+        # 1 Googol reached!
+        msg = 'SO MANY COOKIES!!!! Remember cookie taste better when shared with friends!'
+    elif cps == 0:
+        # Infinity time left
+        msg = "You're not making any cookies! Click button and buy upgrades to make cookie faster!"
+    else:
+        seconds = (10 ** 100 - cookies) // cps
+        msg = f"At current cookie rate, you will reach **🍪 1 googol** in **{time_str(seconds)}**!"
+        if seconds < 60 * 60:
+            # Less than 1 hour left
+            msg += ' So many cookie so fast!! Almost there, keep going!!'
+        elif seconds < 60 * 60 * 24:
+            # Less than 1 day left
+            msg += ' Be patient!'
+        elif seconds < 60 * 60 * 24 * 7:
+            # Less than 1 week left
+            msg += " You making cookies so fast and still so long? Me think more upgrades!"
+        else:
+            # More than 1 week left
+            msg += (
+                ' Too long... Me no want to wait that long, you that patient? '
+                'You should make cookie faster!')
+
+    # Time to overtake next place
+    ranks.sort(reverse=True)
+    msg += '\n\n'
+    i = 0
+    for i, (_, user_id) in enumerate(ranks):
+        if user_id == user.id:
+            break
+    if i == 0:
+        # First place
+        msg += "🏆 You're in first place! Me and everyone else very proud of you."
+    else:
+        cookies2, user_id2 = ranks[i - 1]
+        user2 = bot.get_user(user_id2)
+        cookie_diff = cookies2 - cookies + 1
+        msg += (
+            f"You're in **{i + 1}{num_suffix(i + 1)}** place! You need **🍪 {bignum(cookie_diff)}** "
+            f"to overtake **{user2.display_name}** for {i}{num_suffix(i)} place!")
+        if cps > 0:
+            seconds = cookie_diff // cps
+            msg += (
+                f" At current cookie rate, it'll take only **{time_str(seconds)}** to get "
+                f"that many cookies!")
+        msg += " Keep going!"
+
+    return dict(content=msg)
+
 # --- Commands --- #
 
 @bot.tree.command()
 async def hello(interaction: d.Interaction):
     """ wake up babe its time for another april fools bot """
-    await interaction.response.send_message(f'Hellooo {interaction.user.mention}')
-
-@bot.tree.command()
-async def cookie(interaction: d.Interaction, channel: d.TextChannel | None):
-    """ send create cookie clicker message """
-    msg_data = await make_clicker_message(allow_skip=False)
-    if channel is None:
-        await interaction.response.send_message(**msg_data)
-        msg: d.Message = await interaction.original_response()
-    else:
-        msg: d.Message = await channel.send(**msg_data)
-        await interaction.response.send_message('done', ephemeral=True)
-    await bot.set_clicker_message(msg)
+    await interaction.response.send_message(f'Hellooo {interaction.user.mention}', ephemeral=True)
 
 @bot.tree.command()
 async def jar(interaction: d.Interaction):
@@ -433,24 +427,46 @@ async def jar(interaction: d.Interaction):
         msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
+@bot.tree.command()
+async def progress(interaction: d.Interaction):
+    """ your cookie progress """
+    msg = make_progess_message(interaction.user)
+    await interaction.response.send_message(**msg)
+
 # --- Dev commands --- #
 
+@bot.tree.command()
+async def start_clicker(interaction: d.Interaction, channel_id: int):
+    """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
+    channel = bot.get_channel(channel_id)
+    msg_data = await make_clicker_message(allow_skip=False)
+    msg: d.Message = await channel.send(**msg_data)
+    await bot.set_clicker_message(msg)
+    await interaction.response.send_message(f'new clicker message sent in {channel}')
+
 @bot.tree.command(guild=DEV_GUILD)
-async def setcookies(interaction: d.Interaction, user: d.Member, cookies: int):
-    """ [test] set cookies for a user """
+async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: int):
+    """ [Dev] set cookies for a given user. """
     async with bot.db:
         bot.db.set_cookies(user.id, cookies)
-    await interaction.response.send_message('done', ephemeral=True)
+    await interaction.response.send_message(f'set {user} cookies to {cookies}')
 
 @bot.tree.command(guild=DEV_GUILD)
 async def reset(interaction: d.Interaction, user: d.Member | None = None):
+    """ [Dev] reset all data for a given user, or everyone if a user is not provided """
     async with bot.db:
         user_ids = [user.id] if user else bot.db.get_participants_user_ids()
         for user_id in user_ids:
             bot.db.delete_participant(user_id)
         bot.db.set_last_clicked_user_id(None)
         bot.db.set_last_clicked_value(0)
-    await interaction.response.send_message('done', ephemeral=True)
+    await interaction.response.send_message(f"reset {user or 'everyone'}")
+
+@bot.tree.command(guild=DEV_GUILD)
+async def kill(interaction: d.Interaction):
+    """ [Dev] kill the bot """
+    await interaction.response.send_message('killing...')
+    await bot.close()
 
 
 if __name__ == '__main__':
