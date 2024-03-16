@@ -1,6 +1,9 @@
+import discord as d
+
 from upgrades import ClickUpgrade, PassiveUpgrade, Upgrade
 
-GUILD_ID = 913924123405729812
+GUILD = d.Object(913924123405729812)
+DEV_GUILD = d.Object(1218666474072444938)
 UPDATE_RATE = 10
 COOKIE_COOLDOWN = 60
 COOKIE_RANGE = (1, 1)

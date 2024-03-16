@@ -29,9 +29,9 @@ class CookieBot(d.Client):
 
     async def setup_hook(self):
         # Sync slash commands
-        guild = d.Object(id=GUILD_ID)
-        self.tree.copy_global_to(guild=guild)
-        await self.tree.sync(guild=guild)
+        self.tree.copy_global_to(guild=GUILD)
+        await self.tree.sync(guild=GUILD)
+        await self.tree.sync(guild=DEV_GUILD)
         print('Commands synced.')
 
         # Add persistent views
@@ -400,6 +400,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             view=view
         )
 
+# --- Commands --- #
 
 @bot.tree.command()
 async def hello(interaction: d.Interaction):
@@ -432,14 +433,16 @@ async def jar(interaction: d.Interaction):
         msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
-@bot.tree.command()
+# --- Dev commands --- #
+
+@bot.tree.command(guild=DEV_GUILD)
 async def setcookies(interaction: d.Interaction, user: d.Member, cookies: int):
     """ [test] set cookies for a user """
     async with bot.db:
         bot.db.set_cookies(user.id, cookies)
     await interaction.response.send_message('done', ephemeral=True)
 
-@bot.tree.command()
+@bot.tree.command(guild=DEV_GUILD)
 async def reset(interaction: d.Interaction, user: d.Member | None = None):
     async with bot.db:
         user_ids = [user.id] if user else bot.db.get_participants_user_ids()
