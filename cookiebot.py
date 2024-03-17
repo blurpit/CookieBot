@@ -391,11 +391,16 @@ async def make_progess_message(user: d.User) -> dict:
     # Time to overtake next place
     ranks.sort(reverse=True)
     msg += '\n\n'
-    i = 0
     for i, (_, user_id) in enumerate(ranks):
         if user_id == user.id:
             break
-    if i == 0:
+    else:
+        i = -1
+
+    if i == -1:
+        # Not participating
+        msg += "Make some cookies to get on the leaderboard!"
+    elif i == 0:
         # First place
         msg += "🏆 You're in first place! Me and everyone else very proud of you."
     else:
