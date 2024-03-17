@@ -1,5 +1,6 @@
 import random
-from typing import Any
+from datetime import datetime
+from io import BytesIO
 
 import discord as d
 from discord.ext import tasks
@@ -476,6 +477,27 @@ async def reset(interaction: d.Interaction, user: d.Member | None = None):
         bot.db.set_last_clicked_user_id(None)
         bot.db.set_last_clicked_value(0)
     await interaction.response.send_message(f"reset {user or 'everyone'}")
+
+@bot.tree.command(guild=DEV_GUILD)
+async def clear_upgrade_message_storage(interaction: d.Interaction):
+    """ [Dev] clears all associations between upgrade messages and their owners """
+    async with bot.db:
+        bot.db.clear_upgrade_message_owner_ids()
+    await interaction.response.send_message('upgrade message owners deleted')
+
+@bot.tree.command(guild=DEV_GUILD)
+async def print_db(interaction: d.Interaction):
+    """ [Dev] print the entire database """
+    async with bot.db:
+        j = bot.db.get_json()
+    if len(j) > 100:
+        file = BytesIO()
+        file.write(j.encode('utf-8'))
+        file.seek(0)
+        fn = f'db_{datetime.utcnow().isoformat()}.json'
+        await interaction.response.send_message(file=d.File(file, filename=fn))
+    else:
+        await interaction.response.send_message(f"```\n{j}\n```")
 
 @bot.tree.command(guild=DEV_GUILD)
 async def kill(interaction: d.Interaction):

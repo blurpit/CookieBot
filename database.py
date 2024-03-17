@@ -46,6 +46,10 @@ class Database:
         self._data.setdefault('last_clicked_user_id', None)
         self._data.setdefault('last_clicked_value', 0)
 
+    def get_json(self, indent=4):
+        """ get a copy of all the data in the database as a json string """
+        return json.dumps(self._data, indent=indent)
+
     # --- Message storage --- #
     def get_clicker_message_id(self) -> int | None:
         """ ID of the message with the cookie button and leaderboard """
@@ -70,6 +74,10 @@ class Database:
     def set_upgrade_message_owner_id(self, message_id: int | None, user_id: int):
         """ Set the owner of the given upgrade message """
         self._data['upgrade_message_owner_ids'][str(message_id)] = user_id
+
+    def clear_upgrade_message_owner_ids(self):
+        """ Deletes all upgrade message owner ids """
+        self._data['upgrade_message_owner_ids'].clear()
 
     # --- Cookie counts --- #
 
