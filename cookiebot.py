@@ -461,11 +461,27 @@ async def start_clicker(interaction: d.Interaction, channel_id: str):
 
 @bot.tree.command(guild=DEV_GUILD)
 async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
-    """ [Dev] set cookies for a given user. """
+    """ [Dev] set cookies for a given user """
     cookies = int(cookies)
     async with bot.db:
         bot.db.set_cookies(user.id, cookies)
     await interaction.response.send_message(f'set {user} cookies to {cookies}')
+
+@bot.tree.command(guild=DEV_GUILD)
+async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: int, level: int | None):
+    """ [Dev] set the upgrade level for a given user. If level is not given, increase by 1 """
+    if upgrade_id < 0 or upgrade_id >= len(UPGRADES):
+        await interaction.response.send_message('invalid upgrade id', ephemeral=True)
+        return
+
+    async with bot.db:
+        if level is None:
+            level = bot.db.get_upgrade_level(user.id, upgrade_id) + 1
+        level = max(level, 0)
+        bot.db.set_upgrade_level(user.id, upgrade_id, level)
+
+    upgrade = UPGRADES[upgrade_id]
+    await interaction.response.send_message(f'set {upgrade_id} ({upgrade.name}) for {user} to lv.{level}')
 
 @bot.tree.command(guild=DEV_GUILD)
 async def reset(interaction: d.Interaction, user: d.Member | None = None):
@@ -490,7 +506,7 @@ async def print_db(interaction: d.Interaction):
     """ [Dev] print the entire database """
     async with bot.db:
         j = bot.db.get_json()
-    if len(j) > 100:
+    if len(j) > 1990:
         file = BytesIO()
         file.write(j.encode('utf-8'))
         file.seek(0)
