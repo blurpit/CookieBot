@@ -291,7 +291,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
             embed = None
         else:
             embed = d.Embed(color=d.Color.blue())
-            embed.set_footer(text=f'updates every {time_str(UPDATE_RATE)}')
+            embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
 
             entries = []
             for user_id in bot.db.get_participants_user_ids():
