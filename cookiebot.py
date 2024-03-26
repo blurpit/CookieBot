@@ -444,6 +444,7 @@ async def jar(interaction: d.Interaction):
         msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies!! So many! om nom nom nom"
     await interaction.response.send_message(msg)
 
+@bot.tree.command()
 async def upgrades(interaction: d.Interaction):
     """ view & purchase upgrades """
     msg = await make_upgrades_message(interaction.user)
