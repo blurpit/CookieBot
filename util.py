@@ -39,7 +39,9 @@ _numnames = [
     'novemdecillion', 'vigintillion'
 ]
 def bignum(n):
-    if not isinstance(n, int):
+    if isinstance(n, str):
+        return n
+    elif not isinstance(n, int):
         raise TypeError(f"bignum requires int, not {type(n)}")
     neg = '-' if n < 0 else ''
     n = abs(n)
