@@ -15,12 +15,6 @@ class Upgrade(ABC):
         _id_counter += 1
 
     @abstractmethod
-    def get_cookies_since(self, timestamp: datetime, level: int) -> int:
-        """ How many cookies given between `timestamp` and now, rounding DOWN
-            to the nearest second """
-        pass
-
-    @abstractmethod
     def get_cookies_per_unit(self, level: int) -> int:
         """ Cookies per unit (click or second) given by this upgrade at the given level """
         pass
@@ -35,9 +29,6 @@ class ClickUpgrade(Upgrade):
         super().__init__(emoji, name, 'click', hide=hide)
         self.cpc_func = cpc_func
         self.price_func = price_func
-
-    def get_cookies_since(self, timestamp, level):
-        return 0
 
     def get_cookies_per_unit(self, level):
         if level <= 0:
@@ -54,13 +45,6 @@ class PassiveUpgrade(Upgrade):
         super().__init__(emoji, name, 'sec', hide)
         self.cps_func = cps_func
         self.price_func = price_func
-
-    def get_cookies_since(self, timestamp, level):
-        if self.cps_func == 0:
-            return 0
-        now = datetime.utcnow()
-        delta = int((now - timestamp).total_seconds())
-        return max(delta * self.get_cookies_per_unit(level), 0)
 
     def get_cookies_per_unit(self, level):
         if level <= 0:
