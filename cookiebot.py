@@ -303,10 +303,11 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
             for user_id in bot.db.get_participants_user_ids():
                 user = bot.get_user(user_id)
                 cookies = bot.db.get_cookies(user_id)
-                entries.append((cookies, user.display_name))
+                cps = bot.db.get_cookies_per_second(user_id)
+                entries.append((cookies, cps, user.display_name))
             entries.sort(reverse=True)
 
-            for i, (cookies, name) in enumerate(entries[:25], 1):
+            for i, (cookies, cps, name) in enumerate(entries[:25], 1):
                 if i == 1:
                     name = '🥇 ' + name
                 elif i == 2:
@@ -315,7 +316,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
                     name = '🥉 ' + name
                 else:
                     name = f'{i}. {name}'
-                embed.add_field(name=name, value=f'🍪 {bignum(cookies)}', inline=True)
+                embed.add_field(name=name, value=f'🍪 {bignum(cookies)}\n+{bignum(cps)} / sec', inline=True)
 
         return dict(
             content=content,
