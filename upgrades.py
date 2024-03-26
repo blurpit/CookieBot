@@ -1,13 +1,8 @@
-import functools
 from abc import ABC, abstractmethod
 from datetime import datetime
-from fractions import Fraction
 
 _id_counter = 0
 
-@functools.cache
-def _exp(coeff, base, e):
-    return int(coeff * pow(base, e))
 
 class Upgrade(ABC):
     def __init__(self, emoji: str, name: str, unit: str, hide=False):
@@ -36,10 +31,10 @@ class Upgrade(ABC):
         pass
 
 class ClickUpgrade(Upgrade):
-    def __init__(self, emoji, name, base_cpc: int, base_price: int, hide=False):
+    def __init__(self, emoji, name, cpc_func, price_func, hide=False):
         super().__init__(emoji, name, 'click', hide=hide)
-        self.base_cpc = base_cpc
-        self.base_price = base_price
+        self.cpc_func = cpc_func
+        self.price_func = price_func
 
     def get_cookies_since(self, timestamp, level):
         return 0
@@ -47,21 +42,21 @@ class ClickUpgrade(Upgrade):
     def get_cookies_per_unit(self, level):
         if level <= 0:
             return 0
-        return _exp(self.base_cpc, 2, level-1)
+        return self.cpc_func(level)
 
     def get_price(self, level):
         if level <= 0:
             return 0
-        return _exp(self.base_price, 10, level-1)
+        return self.price_func(level)
 
 class PassiveUpgrade(Upgrade):
-    def __init__(self, emoji, name, base_cps: int, base_price: int, hide=False):
+    def __init__(self, emoji, name, cps_func, price_func, hide=False):
         super().__init__(emoji, name, 'sec', hide)
-        self.base_cps = base_cps
-        self.base_price = base_price
+        self.cps_func = cps_func
+        self.price_func = price_func
 
     def get_cookies_since(self, timestamp, level):
-        if self.base_cps == 0:
+        if self.cps_func == 0:
             return 0
         now = datetime.utcnow()
         delta = int((now - timestamp).total_seconds())
@@ -70,9 +65,9 @@ class PassiveUpgrade(Upgrade):
     def get_cookies_per_unit(self, level):
         if level <= 0:
             return 0
-        return _exp(self.base_cps, 2, Fraction(level-1, 10))
+        return self.cps_func(level)
 
     def get_price(self, level):
         if level <= 0:
             return 0
-        return _exp(self.base_price, Fraction(11, 10), level-1)
+        return self.price_func(level)
