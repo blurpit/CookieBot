@@ -366,6 +366,9 @@ async def make_progess_message(user: d.User) -> dict:
     if cookies > 10 ** 100:
         # 1 Googol reached!
         msg = 'SO MANY COOKIES!!!! Remember cookie taste better when shared with friends!'
+    elif cps < 0:
+        # Oh no
+        msg = 'Oh no... you losing cookie fast. I give some if you click button, maybe will help?'
     elif cps == 0:
         # Infinity time left
         msg = "You're not making any cookies! Click button and buy upgrades to make cookie faster!"
@@ -431,7 +434,9 @@ async def jar(interaction: d.Interaction):
     async with bot.db:
         cookies = bot.db.get_cookies(interaction.user.id)
 
-    if cookies == 0:
+    if cookies < 0:
+        msg = f"{interaction.user.mention} YOU OWE ME COOKIE! GIVE OR ill be sad >:("
+    elif cookies == 0:
         msg = f"{interaction.user.mention} no have any cookie!"
     elif cookies < 1000:
         msg = f"{interaction.user.mention} has **🍪 {cookies:,}** cookies! not many cookie but better than no cookie!!"

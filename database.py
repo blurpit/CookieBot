@@ -82,9 +82,10 @@ class Database:
     # --- Cookie counts --- #
 
     def get_total_cookies(self) -> int:
-        """ Total number of cookies everyone collectively has """
+        """ Total number of cookies everyone collectively has (excludes negative
+            cookie counts) """
         return sum(
-            self.get_cookies(user_id)
+            max(0, self.get_cookies(user_id))
             for user_id in self.get_participants_user_ids()
         )
 
