@@ -320,7 +320,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
 async def make_upgrades_message(user: d.User | d.Member) -> dict:
     async with bot.db:
         balance = bot.db.get_cookies(user.id)
-        content = f'## 🍪 {bignum(balance)}'
+        content = f'## 🍪 {bignum(balance)}\n{user.mention}'
 
         embed = d.Embed(color=d.Color.blue())
         embed.title = f"{user.display_name}'s upgrades"
