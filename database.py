@@ -37,7 +37,7 @@ class Database:
         with open(self._filepath, 'r') as f:
             self._data = json.loads(f.read() or '{}')
 
-        self._data.setdefault('clicked_cookies', {})
+        self._data.setdefault('cookies', {})
         self._data.setdefault('upgrades', {})
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
