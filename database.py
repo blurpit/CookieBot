@@ -151,10 +151,10 @@ class Database:
             self._data['upgrades'][str(user_id)] = {}
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
 
-    def does_someone_own(self, upgrade_id: int):
-        """ True if anyone has purchased the given upgrade """
+    def does_someone_own(self, upgrade_id: int, level: int):
+        """ True if anyone owns the given upgrade at the given level or higher """
         for purchases in self._data['upgrades'].values():
-            if str(upgrade_id) in purchases:
+            if purchases.get(str(upgrade_id), 0) >= level:
                 return True
         return False
 
