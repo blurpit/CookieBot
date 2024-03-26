@@ -125,7 +125,7 @@ class CookieClicker(d.ui.View):
         super().__init__(timeout=None)
         self.button = self.children[0]
 
-    @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='<:emoji3:1218668546544894053>', custom_id='cookie-btn')
+    @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='🍪', custom_id='cookie-btn')
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
