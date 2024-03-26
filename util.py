@@ -26,6 +26,11 @@ def time_str(s):
         strs.append(f'{y}yr')
     return ' '.join(reversed(strs))
 
+def trunc_str(n, ndigits):
+    p = 10**ndigits
+    n = math.trunc(n * p) / p
+    return f'{n:.{ndigits}f}'.rstrip('0').rstrip('.')
+
 _numnames = [
     'million', 'billion', 'trillion', 'quadrillion', 'quintillion',
     'sextillion', 'septillion', 'octillion', 'nonillion', 'decillion',
@@ -35,22 +40,22 @@ _numnames = [
 ]
 def bignum(n):
     if not isinstance(n, int):
-        return n
+        raise TypeError(f"bignum requires int, not {type(n)}")
     neg = '-' if n < 0 else ''
     n = abs(n)
     if n < 10_000_000:
         return f'{n:,}'
 
-    exp = int(math.log10(n))
+    exp = len(str(n))-1
     mag = exp // 3
     index = mag - 2
     if index < len(_numnames):
-        num = n / (1000 ** mag)
-        num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
+        num = n // (10 ** (3*mag - BIGNUM_PLACES)) / 10**BIGNUM_PLACES
+        num_str = trunc_str(num, BIGNUM_PLACES)
         return f'{neg}{num_str} {_numnames[index]}'
     else:
-        num = n / (10 ** exp)
-        num_str = f'{num:.{BIGNUM_PLACES}f}'.rstrip('0').rstrip('.')
+        num = n // (10 ** (exp - BIGNUM_PLACES)) / 10**BIGNUM_PLACES
+        num_str = trunc_str(num, BIGNUM_PLACES)
         return f'{neg}{num_str}e+{exp}'
 
 _C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
