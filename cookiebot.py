@@ -453,14 +453,22 @@ async def progress(interaction: d.Interaction):
 # --- Dev commands --- #
 
 @bot.tree.command()
-async def start_clicker(interaction: d.Interaction, channel_id: str):
+async def clicker(interaction: d.Interaction, channel_id: str):
     """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
-    channel_id = int(channel_id)
-    channel = bot.get_channel(channel_id)
+    try:
+        channel_id = int(channel_id)
+        channel = bot.get_channel(channel_id)
+    except ValueError:
+        channel = None
+
+    if channel is None:
+        interaction.response.send_message(f'channel id not found: {channel_id}')
+        return
+
     msg_data = await make_clicker_message(allow_skip=False)
     msg: d.Message = await channel.send(**msg_data)
     await bot.set_clicker_message(msg)
-    await interaction.response.send_message(f'new clicker message sent in {channel}')
+    await interaction.response.send_message(f'New clicker message sent in #{channel}')
 
 @bot.tree.command(guild=DEV_GUILD)
 async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
@@ -474,7 +482,7 @@ async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
 async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: int, level: int | None):
     """ [Dev] set the upgrade level for a given user. If level is not given, increase by 1 """
     if upgrade_id < 0 or upgrade_id >= len(UPGRADES):
-        await interaction.response.send_message('invalid upgrade id', ephemeral=True)
+        await interaction.response.send_message('invalid upgrade id')
         return
 
     async with bot.db:
