@@ -1,23 +1,50 @@
+import functools
+
 from discord import Object
 
 from upgrades import ClickUpgrade, PassiveUpgrade, Upgrade
 
+# Discord guilds
 GUILD = Object(913924123405729812)
 DEV_GUILD = Object(913924123405729812)
-UPDATE_RATE = 10
+
+# How fast cookie counts are updated in the db
+COOKIE_UPDATE_RATE = 5
+# How fast the clicker/leaderboard message is updated on discord
+DISCORD_UPDATE_RATE = 30
+# Cookie button cooldown
 COOKIE_COOLDOWN = 60
-COOKIE_RANGE = (1, 1)
+# Multiplication factor for upgrade CPS to upgrade price
+PRICE_FACTOR = 200
+# Range of cookies obtainable from the button
+COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
+# Number of decimal places to show bignums
 BIGNUM_PLACES = 3
 
+def exp(coeff, base):
+    @functools.cache
+    def f(lvl):
+        return round(coeff * pow(base, lvl - 1))
+    return f
+
+def blurbot_price(_):
+    return 69 * 10 ** 68
+
+def blurbot_cps(lvl):
+    if lvl < 10:
+        return lvl + 2
+    else:
+        return -10**96
+
 UPGRADES: list[Upgrade] = [
-    ClickUpgrade  ('👍', 'Facebook Like Button',         1,    100),
-    PassiveUpgrade('👨‍🍳', 'Chef Freako',                  1,    100),
-    PassiveUpgrade('🔥', 'Oven Eat the Food',            5,    1000),
-    PassiveUpgrade('🎤', 'Astley Automator',             50,   10000),
-    PassiveUpgrade('🛠️', 'Home Depot Bakery',            300,  50000),
-    PassiveUpgrade('🏰', 'Crypto Cookie Castle',         1500, 200000),
-    PassiveUpgrade('🏗️', 'Cookie Construction Company',  5000, 500000),
-    PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', 3,    1000001, hide=True),
+    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 2),            exp(800, 2)),
+    PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(PRICE_FACTOR*1, 1.75)),
+    PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(PRICE_FACTOR*50, 2)),
+    PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(PRICE_FACTOR*5000, 8)),
+    PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        exp(PRICE_FACTOR*150000, 75)),
+    PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
+    PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
+    PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
 ]
 
 COOKIE_QUOTES = [
