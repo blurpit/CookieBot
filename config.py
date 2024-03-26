@@ -1,4 +1,5 @@
 import functools
+import logging
 
 from discord import Object
 
@@ -20,6 +21,8 @@ PRICE_FACTOR = 200
 COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
 # Number of decimal places to show bignums
 BIGNUM_PLACES = 3
+# Logger level
+LOG_LEVEL = logging.INFO
 
 def exp(coeff, base):
     @functools.cache

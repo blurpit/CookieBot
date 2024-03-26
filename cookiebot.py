@@ -9,8 +9,14 @@ from config import *
 from database import Database
 from util import *
 
-
 # --- Bot --- #
+
+log = logging.getLogger('bot')
+log.setLevel(LOG_LEVEL)
+dt_fmt = '%Y-%m-%d %H:%M:%S'
+log_handler = logging.FileHandler(filename='data/bot.log', encoding='utf-8', mode='w')
+log_handler.setFormatter(logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{'))
+log.addHandler(log_handler)
 
 class CookieBot(d.Client):
     def __init__(self):
@@ -26,7 +32,7 @@ class CookieBot(d.Client):
         self.prev_cooldown_remaining = 0
 
     async def on_ready(self):
-        print(f'Logged in as {self.user}!')
+        log.info(f'Logged in as {self.user}!')
         activity = d.Activity(type=d.ActivityType.watching, name='the oven')
         await self.change_presence(activity=activity)
         await self.init_clicker_message()
@@ -37,13 +43,13 @@ class CookieBot(d.Client):
         await self.tree.sync(guild=GUILD)
         if GUILD != DEV_GUILD:
             await self.tree.sync(guild=DEV_GUILD)
-        print('Commands synced.')
+        log.debug('Commands synced.')
 
         # Add persistent views
         async with self.db:
             clicker_msg_id = self.db.get_clicker_message_id()
             self.add_view(CookieClicker(), message_id=clicker_msg_id)
-            print(f'Added persistent clicker view for message {clicker_msg_id}')
+            log.info(f'Added persistent clicker view for message {clicker_msg_id}')
 
         # Start cookie updater task
         self.cookie_updater.start()
@@ -57,7 +63,7 @@ class CookieBot(d.Client):
             if not self.clicker_message_updater.is_running():
                 self.clicker_message_updater.start()
 
-            print(f'Updated cookie message to {msg.id}')
+            log.info(f'Updated cookie message to {msg.id}')
 
     async def init_clicker_message(self):
         async with self.db:
@@ -69,9 +75,9 @@ class CookieBot(d.Client):
                 channel = bot.get_channel(channel_id)
                 self.message = await channel.fetch_message(msg_id)
                 self.clicker_message_updater.start()
-                print(f'Initialized cookie message {msg_id}')
+                log.info(f'Initialized cookie message {msg_id}')
             except d.NotFound:
-                print('Clicker message was deleted!')
+                log.warning('Clicker message was deleted!')
                 async with bot.db:
                     bot.db.set_clicker_message_id(None)
                     bot.db.set_clicker_channel_id(None)
@@ -86,21 +92,21 @@ class CookieBot(d.Client):
 
     @cookie_updater.before_loop
     async def before_cookie_updater(self):
-        print(f'Cookie updater started. ({COOKIE_UPDATE_RATE}s)')
+        log.debug(f'Cookie updater started. ({COOKIE_UPDATE_RATE}s)')
 
     @cookie_updater.after_loop
     async def after_cookie_updater(self):
-        print('Cookie updater stopped.')
+        log.debug('Cookie updater stopped.')
 
     @tasks.loop(seconds=DISCORD_UPDATE_RATE)
     async def clicker_message_updater(self):
-        print('Updating clicker')
+        log.debug('Updating clicker')
         msg = await make_clicker_message()
         if msg is not None:
             try:
                 await self.message.edit(**msg)
             except d.NotFound:
-                print('Clicker message was deleted!')
+                log.warning('Clicker message was deleted!')
                 self.clicker_message_updater.stop()
                 self.message = None
                 async with bot.db:
@@ -110,11 +116,11 @@ class CookieBot(d.Client):
     @clicker_message_updater.before_loop
     async def before_cookie_updater(self):
         await self.wait_until_ready()
-        print(f'Clicker message updater started. ({DISCORD_UPDATE_RATE}s)')
+        log.debug(f'Clicker message updater started. ({DISCORD_UPDATE_RATE}s)')
 
     @clicker_message_updater.after_loop
     async def after_cookie_updater(self):
-        print('Clicker message updater stopped.')
+        log.debug('Clicker message updater stopped.')
 
 bot = CookieBot()
 
@@ -132,7 +138,7 @@ class CookieClicker(d.ui.View):
             if cooldown > 0:
                 msg = f"All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
                 ephemeral = True
-                print(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
+                log.warning(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
             else:
                 user_id = interaction.user.id
                 quote = random.choice(COOKIE_QUOTES)
@@ -143,7 +149,7 @@ class CookieClicker(d.ui.View):
                 bot.db.set_last_clicked_time()
                 bot.db.set_last_clicked_user_id(user_id)
                 bot.db.set_last_clicked_value(num)
-                print(f'Click! {interaction.user.name} got {num} cookies')
+                log.info(f'Click! {interaction.user.name} got {num} cookies')
 
                 msg = f'{quote}\nYou got **{bignum(num)}** cookies! Om nom nom nom'
                 ephemeral = True
@@ -212,7 +218,7 @@ class UpgradeSelect(d.ui.Select):
                 else:
                     bot.db.set_upgrade_level(user.id, upgrade.id, level)
                     bot.db.add_cookies(user.id, -price)
-                    print(f'Purchased {upgrade.name} lv. {level}')
+                    log.info(f'{user.name} purchased {upgrade.name} lv. {level}')
                     fail = None
                 msg = await make_upgrades_message(user)
 
@@ -263,7 +269,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
             # Don't update the message if nothing has changed (cookie count is the
             # same AND the cooldown did not expire)
             if total_cookies == bot.prev_cookie_count and cooldown == bot.prev_cooldown_remaining:
-                print('Skipping update')
+                log.debug('Skipping update')
                 return None
 
         # Update prev counts
@@ -542,4 +548,4 @@ async def kill(interaction: d.Interaction):
 if __name__ == '__main__':
     with open('client_secret.txt') as file:
         token = file.read().strip()
-    bot.run(token)
+    bot.run(token, log_handler=log_handler)
