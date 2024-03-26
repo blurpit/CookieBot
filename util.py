@@ -1,5 +1,6 @@
 import math
-from config import BIGNUM_PLACES
+
+from config import BIGNUM_PLACES, UPGRADES
 
 
 def time_str(s):
@@ -75,3 +76,13 @@ def num_suffix(n: int):
     elif digit == '3':
         return 'rd'
     return 'th'
+
+def print_upgrade_values(to_level=20):
+    for u in UPGRADES:
+        print(u.name)
+        print('{:<8} {:<25} {}'.format('Lv.', 'Cost', f'🍪/{u.unit}'))
+        for lvl in range(1, to_level + 1):
+            val = u.get_cookies_per_unit(lvl)
+            price = u.get_price(lvl)
+            print('{:<8} {:<25} {}'.format(lvl, bignum(price), bignum(val)))
+        print()
