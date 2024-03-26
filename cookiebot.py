@@ -76,23 +76,23 @@ class CookieBot(d.Client):
                     bot.db.set_clicker_message_id(None)
                     bot.db.set_clicker_channel_id(None)
 
-    @tasks.loop(seconds=1)
+    @tasks.loop(seconds=COOKIE_UPDATE_RATE)
     async def cookie_updater(self):
         """ Updates the database cookie count. Does not use discord api. """
         async with self.db:
             for user_id in self.db.get_participants_user_ids():
                 cps = self.db.get_cookies_per_second(user_id)
-                self.db.add_cookies(user_id, cps)
+                self.db.add_cookies(user_id, cps * COOKIE_UPDATE_RATE)
 
     @cookie_updater.before_loop
     async def before_cookie_updater(self):
-        print('Cookie updater started.')
+        print(f'Cookie updater started. ({COOKIE_UPDATE_RATE}s)')
 
     @cookie_updater.after_loop
     async def after_cookie_updater(self):
         print('Cookie updater stopped.')
 
-    @tasks.loop(seconds=UPDATE_RATE)
+    @tasks.loop(seconds=DISCORD_UPDATE_RATE)
     async def clicker_message_updater(self):
         print('Updating clicker')
         msg = await make_clicker_message()
@@ -110,7 +110,7 @@ class CookieBot(d.Client):
     @clicker_message_updater.before_loop
     async def before_cookie_updater(self):
         await self.wait_until_ready()
-        print('Clicker message updater started.')
+        print(f'Clicker message updater started. ({DISCORD_UPDATE_RATE}s)')
 
     @clicker_message_updater.after_loop
     async def after_cookie_updater(self):
