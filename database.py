@@ -39,6 +39,8 @@ class Database:
 
         self._data.setdefault('cookies', {})
         self._data.setdefault('upgrades', {})
+        self._data.setdefault('cpc_cache', {})
+        self._data.setdefault('cps_cache', {})
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
         self._data.setdefault('upgrade_message_owner_ids', {})
@@ -104,6 +106,8 @@ class Database:
     def delete_participant(self, user_id: int):
         self._data['cookies'].pop(str(user_id), None)
         self._data['upgrades'].pop(str(user_id), None)
+        self._data['cpc_cache'].pop(str(user_id), None)
+        self._data['cps_cache'].pop(str(user_id), None)
         if user_id == self._data['last_clicked_user_id']:
             self._data['last_clicked_user_id'] = None
             self._data['last_clicked_value'] = 0
@@ -124,20 +128,12 @@ class Database:
 
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
-        return sum(
-            UPGRADES[i].get_cookies_per_unit(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
-            if isinstance(UPGRADES[i], PassiveUpgrade)
-        )
+        return self._data['cps_cache'].get(str(user_id), 0)
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
-        return sum(
-            UPGRADES[i].get_cookies_per_unit(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
-            if isinstance(UPGRADES[i], ClickUpgrade)
-        )
+        return self._data['cpc_cache'].get(str(user_id), 0)
 
     def get_spent_on_upgrades(self, user_id: int) -> int:
         """ How many cookies a given user has spent on upgrades """
@@ -150,7 +146,17 @@ class Database:
         """ Sets the level of an upgrade for a given user """
         if str(user_id) not in self._data['upgrades']:
             self._data['upgrades'][str(user_id)] = {}
+
+        old_level = self._data['upgrades'][str(user_id)].get(str(upgrade_id), 0)
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
+
+        # Update cache
+        u = UPGRADES[upgrade_id]
+        cpu_diff = u.get_cookies_per_unit(level) - u.get_cookies_per_unit(old_level)
+        if isinstance(u, ClickUpgrade):
+            self._data['cpc_cache'][str(user_id)] = self._data['cpc_cache'].get(str(user_id), 0) + cpu_diff
+        elif isinstance(u, PassiveUpgrade):
+            self._data['cps_cache'][str(user_id)] = self._data['cps_cache'].get(str(user_id), 0) + cpu_diff
 
     def does_someone_own(self, upgrade_id: int, level: int):
         """ True if anyone owns the given upgrade at the given level or higher """
