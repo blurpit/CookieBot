@@ -54,8 +54,8 @@ def blurbot_cps(lvl):
 PRICE_FACTOR = 200
 shell = '<:blueshell:1222371607784198215>'
 UPGRADES: list[Upgrade] = [
-    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 4),            exp(4*100, 4)),
-    ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(1000, 1000),        exp(8*1000, 1000)),
+    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 8),            exp(4*100, 8)),
+    ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(10**6, 8000),       exp(4*10**6, 8000)),
     PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(PRICE_FACTOR*1, 1.75)),
     PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(PRICE_FACTOR*50, 2)),
     PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(PRICE_FACTOR*5000, 8)),
@@ -63,7 +63,7 @@ UPGRADES: list[Upgrade] = [
     PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
     PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
     PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
-    SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**6), 15), hide=True)
+    SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
 ]
 
 COOKIE_QUOTES = [
