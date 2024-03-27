@@ -84,6 +84,12 @@ def num_suffix(n: int):
         return 'rd'
     return 'th'
 
+def percent(p):
+    p = round(p * 100, 1)
+    if p % 1 == 0:
+        p = int(p)
+    return f'{p}%'
+
 def print_upgrade_values(to_level=20):
     for u in UPGRADES:
         print(u.name)

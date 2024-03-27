@@ -17,6 +17,8 @@ DISCORD_UPDATE_RATE = 30
 COOKIE_COOLDOWN = 60
 # Range of cookies obtainable from the button
 COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
+# Percentage of cookies stolen when blue shelled
+SWINDLE_AMOUNT = 0.8
 # Number of decimal places to show bignums
 BIGNUM_PLACES = 3
 # Logger level

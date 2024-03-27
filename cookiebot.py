@@ -252,7 +252,7 @@ class UpgradeSelect(d.ui.Select):
                         desc = '???'
                     else:
                         prob = upgrade.get_probability(level + 1)
-                        desc = f'{prob}%'
+                        desc = percent(prob)
                 else:
                     num = upgrade.get_cookies_per_unit(level + 1)
                     if upgrade.hide and not bot.db.does_someone_own(upgrade.id, level + 1):
@@ -354,7 +354,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             if isinstance(upgrade, SwindleUpgrade):
                 prob = upgrade.get_probability(level)
                 if level > 0:
-                    value = f"**{prob}%** chance to **swindle** 50% of 1st place's cookies when clicking the button"
+                    value = f"**{percent(prob)}** chance to **swindle** {percent(SWINDLE_AMOUNT)} of 1st place's cookies when clicking the button"
                 else:
                     value = '???'
             else:
