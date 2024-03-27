@@ -1,6 +1,7 @@
 import math
 
 from config import BIGNUM_PLACES, UPGRADES
+from upgrades import SwindleUpgrade
 
 
 def time_str(s):
@@ -41,6 +42,8 @@ _numnames = [
 def bignum(n):
     if isinstance(n, str):
         return n
+    elif n == math.inf:
+        return 'Infinity'
     elif not isinstance(n, int):
         raise TypeError(f"bignum requires int, not {type(n)}")
     neg = '-' if n < 0 else ''
@@ -95,7 +98,10 @@ def print_upgrade_values(to_level=20):
         print(u.name)
         print('{:<8} {:<25} {}'.format('Lv.', 'Cost', f'🍪/{u.unit}'))
         for lvl in range(1, to_level + 1):
-            val = u.get_cookies_per_unit(lvl)
             price = u.get_price(lvl)
-            print('{:<8} {:<25} {}'.format(lvl, bignum(price), bignum(val)))
+            if isinstance(u, SwindleUpgrade):
+                val = percent(u.get_probability(lvl))
+            else:
+                val = bignum(u.get_cookies_per_unit(lvl))
+            print('{:<8} {:<25} {}'.format(lvl, bignum(price), val))
         print()
