@@ -572,6 +572,13 @@ async def clear_upgrade_message_storage(interaction: d.Interaction):
     await interaction.response.send_message('upgrade message owners deleted')
 
 @bot.tree.command(guild=DEV_GUILD)
+async def clear_cached_cpc_cps(interaction: d.Interaction):
+    """ [Dev] clear cpc & cps cache. Only necessary if upgrade config changes """
+    async with bot.db:
+        bot.db.clear_cpc_cps_caches()
+    await interaction.response.send_message('cpc & cps cache cleared')
+
+@bot.tree.command(guild=DEV_GUILD)
 async def print_db(interaction: d.Interaction):
     """ [Dev] print the entire database """
     async with bot.db:

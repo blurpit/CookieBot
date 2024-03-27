@@ -114,7 +114,13 @@ class Database:
         ranks.sort(reverse=True)
         return ranks
 
+    def clear_cpc_cps_caches(self):
+        """ Clear cached CPC and CPS values (only necessary if upgrade config is changed) """
+        self._data['cpc_cache'].clear()
+        self._data['cps_cache'].clear()
+
     def delete_participant(self, user_id: int):
+        """ Delete all data associated with a single participant """
         self._data['cookies'].pop(str(user_id), None)
         self._data['upgrades'].pop(str(user_id), None)
         self._data['cpc_cache'].pop(str(user_id), None)
