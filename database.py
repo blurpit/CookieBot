@@ -139,12 +139,28 @@ class Database:
 
     def get_cookies_per_second(self, user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
-        return self._data['cps_cache'].get(str(user_id), 0)
+        if str(user_id) in self._data['cps_cache']:
+            return self._data['cps_cache'][str(user_id)]
+        cps = sum(
+            UPGRADES[i].get_cookies_per_unit(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
+            if isinstance(UPGRADES[i], PassiveUpgrade)
+        )
+        self._data['cps_cache'][str(user_id)] = cps
+        return cps
 
     def get_cookies_per_click(self, user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
-        return self._data['cpc_cache'].get(str(user_id), 0)
+        if str(user_id) in self._data['cpc_cache']:
+            return self._data['cpc_cache'][str(user_id)]
+        cpc = sum(
+            UPGRADES[i].get_cookies_per_unit(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
+            if isinstance(UPGRADES[i], ClickUpgrade)
+        )
+        self._data['cpc_cache'][str(user_id)] = cpc
+        return cpc
 
     def get_swindle_probability(self, user_id: int) -> float:
         """ Probability of swindling cookies for the given user """
