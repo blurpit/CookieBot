@@ -137,10 +137,10 @@ class CookieClicker(d.ui.View):
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
             if cooldown > 0:
                 msg = f"All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
-                ephemeral = True
                 log.warning(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
             else:
-                user_id = interaction.user.id
+                user = interaction.user
+                user_id = user.id
                 quote = random.choice(COOKIE_QUOTES)
                 base_num = random.randint(*COOKIE_RANGE)
 
@@ -149,14 +149,44 @@ class CookieClicker(d.ui.View):
                 bot.db.set_last_clicked_time()
                 bot.db.set_last_clicked_user_id(user_id)
                 bot.db.set_last_clicked_value(num)
-                log.info(f'Click! {interaction.user.name} got {num} cookies')
+                log.info(f'Click! {user.name} got {num} cookies')
+                msg = f'{quote}\nYou got 🍪 **{bignum(num)}** cookies! Om nom nom nom'
 
-                msg = f'{quote}\nYou got **{bignum(num)}** cookies! Om nom nom nom'
-                ephemeral = True
+                # Swindling
+                swindle_msg = None
+                if random.random() < bot.db.get_swindle_probability(user_id):
+                    ranks = bot.db.get_ranks()
+                    first_cookies, _, first_user_id = ranks[0]
+                    first_user = bot.get_user(first_user_id)
+
+                    if user_id == first_user_id:
+                        # Clicker is first. Backfire
+                        num_stolen = int(first_cookies * SWINDLE_BACKFIRE_AMOUNT)
+                        swindle_msg = random.choice(SWINDLE_BACKFIRE_QUOTES)
+                        # Choose a random person
+                        participants = bot.db.get_participants_user_ids()
+                        while user_id == first_user_id:
+                            user_id = random.choice(participants)
+                        user = bot.get_user(user_id)
+                    else:
+                        # Clicker steals from first
+                        num_stolen = int(first_cookies * SWINDLE_AMOUNT)
+                        swindle_msg = random.choice(SWINDLE_QUOTES)
+
+                    # Remove num_stolen from first place and give it to the thief
+                    bot.db.add_cookies(first_user_id, -num_stolen)
+                    bot.db.add_cookies(user_id, num_stolen)
+
+                    # Fill in message template
+                    swindle_msg = swindle_msg.replace('{a}', first_user.mention) \
+                                             .replace('{b}', user.mention) \
+                                             .replace('{n}', bignum(num_stolen))
 
         button.disabled = True
         bot.clicker_message_updater.restart() # force update after button press
-        await interaction.response.send_message(msg, ephemeral=ephemeral)
+        await interaction.response.send_message(msg, ephemeral=True)
+        if swindle_msg is not None:
+            await interaction.channel.send(swindle_msg)
 
     @d.ui.button(label='My upgrades', style=d.ButtonStyle.gray, emoji='⬆️', custom_id='upgrades-btn')
     async def upgrades(self, interaction: d.Interaction, button: d.ui.Button):
@@ -308,15 +338,9 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
             embed = d.Embed(color=d.Color.blue())
             embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
 
-            entries = []
-            for user_id in bot.db.get_participants_user_ids():
-                user = bot.get_user(user_id)
-                cookies = bot.db.get_cookies(user_id)
-                cps = bot.db.get_cookies_per_second(user_id)
-                entries.append((cookies, cps, user.display_name))
-            entries.sort(reverse=True)
-
-            for i, (cookies, cps, name) in enumerate(entries[:25], 1):
+            ranks = bot.db.get_ranks()
+            for i, (cookies, cps, user_id) in enumerate(ranks[:25], 1):
+                name = bot.get_user(user_id).display_name
                 if i == 1:
                     name = '🥇 ' + name
                 elif i == 2:

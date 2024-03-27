@@ -18,7 +18,9 @@ COOKIE_COOLDOWN = 60
 # Range of cookies obtainable from the button
 COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
 # Percentage of cookies stolen when blue shelled
-SWINDLE_AMOUNT = 0.8
+SWINDLE_AMOUNT = 0.5
+# Percentage of cookies given away when first place blue shells themselves
+SWINDLE_BACKFIRE_AMOUNT = 0.25
 # Number of decimal places to show bignums
 BIGNUM_PLACES = 3
 # Logger level
@@ -51,7 +53,7 @@ UPGRADES: list[Upgrade] = [
     PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
     PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
     PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
-    SwindleUpgrade(shell, 'Blue Shell',                  lambda l: 0.5,          lambda l: 0, hide=True)
+    SwindleUpgrade(shell, 'Blue Shell',                  lambda l: 1,            lambda l: 0, hide=True)
 ]
 
 COOKIE_QUOTES = [
@@ -86,4 +88,20 @@ COOKIE_QUOTES = [
     C is for cookie, that’s good enough for me 
     C is for cookie, that’s good enough for me 
     Oh, cookie, cookie, cookie starts with C""",
+]
+
+SWINDLE_QUOTES = [
+    "<:blueshell:1222371607784198215> {a} dropped their cookie jar and {b} picked up **{n}** cookies!",
+    "<:blueshell:1222371607784198215> {b} snuck past {a}'s security system and stole **{n}** cookies!",
+    "<:blueshell:1222371607784198215> {b} successfully pickpocketed **{n}** cookies from {a}!",
+    "<:blueshell:1222371607784198215> {a} was feeling extra generous and gave {b} **{n}** cookies!",
+    "<:blueshell:1222371607784198215> {a} was feeling guilty for being in first place and gave {b} **{n}** cookies!",
+    "<:blueshell:1222371607784198215> {a} will surely miss the **{n}** cookies that {b} just took!",
+    "<:blueshell:1222371607784198215> Cookie monster say stealing cookie is wrong. {b}, apologize to {a} for taking **{n}** cookies!",
+    "<:blueshell:1222371607784198215> {a} gave away **{n}** cookies! {b} was very persuasive.",
+]
+SWINDLE_BACKFIRE_QUOTES = [
+    "<:blueshell:1222371607784198215> {a}tried to swindle from themselves and lost **{n}** cookies! Luckily, {b} was there to pick them up.",
+    "<:blueshell:1222371607784198215> {a}used **swindle**! It hurt itself in its confusion! {b} gained **{n}** cookies.",
+    "<:blueshell:1222371607784198215> {a}hit themselves with a blue shell and gave **{n}** cookies to {b}!",
 ]

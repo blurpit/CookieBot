@@ -1,9 +1,10 @@
 import asyncio
 import json
+import math
 from datetime import datetime
 
 from config import UPGRADES
-from upgrades import ClickUpgrade, PassiveUpgrade
+from upgrades import ClickUpgrade, PassiveUpgrade, SwindleUpgrade
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -103,6 +104,16 @@ class Database:
         """ Adds cookies to a given user's count """
         self.set_cookies(user_id, self.get_cookies(user_id) + cookies)
 
+    def get_ranks(self) -> list[tuple[int, int, int]]:
+        """ Sorted list of (cookie count, CPS, user id) with highest cookies first """
+        ranks = []
+        for user_id in self.get_participants_user_ids():
+            cookies = self.get_cookies(user_id)
+            cps = self.get_cookies_per_second(user_id)
+            ranks.append((cookies, cps, user_id))
+        ranks.sort(reverse=True)
+        return ranks
+
     def delete_participant(self, user_id: int):
         self._data['cookies'].pop(str(user_id), None)
         self._data['upgrades'].pop(str(user_id), None)
@@ -134,6 +145,14 @@ class Database:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
         return self._data['cpc_cache'].get(str(user_id), 0)
+
+    def get_swindle_probability(self, user_id: int) -> float:
+        """ Probability of swindling cookies for the given user """
+        return 1 - math.prod(
+            1 - UPGRADES[i].get_probability(level)
+            for i, level in enumerate(self.get_upgrade_levels(user_id))
+            if isinstance(UPGRADES[i], SwindleUpgrade)
+        )
 
     def get_spent_on_upgrades(self, user_id: int) -> int:
         """ How many cookies a given user has spent on upgrades """
