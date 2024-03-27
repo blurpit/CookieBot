@@ -3,7 +3,7 @@ import logging
 
 from discord import Object
 
-from upgrades import ClickUpgrade, PassiveUpgrade, Upgrade
+from upgrades import ClickUpgrade, PassiveUpgrade, SwindleUpgrade, Upgrade
 
 # Discord guilds
 GUILD = Object(913924123405729812)
@@ -38,6 +38,7 @@ def blurbot_cps(lvl):
         return -10**96
 
 PRICE_FACTOR = 200
+shell = '<:blueshell:1222371607784198215>'
 UPGRADES: list[Upgrade] = [
     ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 4),            exp(4*100, 4)),
     ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(1000, 1000),        exp(8*1000, 1000)),
@@ -48,6 +49,7 @@ UPGRADES: list[Upgrade] = [
     PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
     PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
     PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
+    SwindleUpgrade(shell, 'Blue Shell',                  lambda l: 0.5,          lambda l: 0, hide=True)
 ]
 
 COOKIE_QUOTES = [

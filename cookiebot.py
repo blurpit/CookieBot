@@ -246,13 +246,22 @@ class UpgradeSelect(d.ui.Select):
             options = []
             for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
                 price = upgrade.get_price(level + 1)
-                num = upgrade.get_cookies_per_unit(level + 1)
-                if upgrade.hide and not bot.db.does_someone_own(upgrade.id, level + 1):
-                    num = '???'
+
+                if isinstance(upgrade, SwindleUpgrade):
+                    if level == 0 and upgrade.hide:
+                        desc = '???'
+                    else:
+                        prob = upgrade.get_probability(level + 1)
+                        desc = f'{prob}%'
+                else:
+                    num = upgrade.get_cookies_per_unit(level + 1)
+                    if upgrade.hide and not bot.db.does_someone_own(upgrade.id, level + 1):
+                        num = '???'
+                    desc = f'+{bignum(num)} / {upgrade.unit}'
 
                 options.append(d.SelectOption(
                     label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
-                    description=f'🍪 {bignum(price)} ⬆️ +{bignum(num)} / {upgrade.unit}',
+                    description=f'🍪 {bignum(price)} ⬆️ {desc}',
                     emoji=upgrade.emoji,
                     value=upgrade.id
                 ))
@@ -341,16 +350,25 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
             level = levels[upgrade.id]
             name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
             price = upgrade.get_price(level + 1)
-            num = upgrade.get_cookies_per_unit(level)
 
-            if level > 0:
-                value = (f'**+{bignum(num)} / {upgrade.unit}**\n'
-                         f'Cost: 🍪 {bignum(price)}')
+            if isinstance(upgrade, SwindleUpgrade):
+                prob = upgrade.get_probability(level)
+                if level > 0:
+                    value = f"**{prob}%** chance to **swindle** 50% of 1st place's cookies when clicking the button"
+                else:
+                    value = '???'
             else:
-                value = (f'Not purchased yet!\n'
-                         f'Cost: 🍪 {bignum(price)}')
+                num = upgrade.get_cookies_per_unit(level)
+                if level > 0:
+                    value = f'**+{bignum(num)} / {upgrade.unit}**'
+                else:
+                    value = 'Not purchased yet!'
 
-            embed.add_field(name=name, value=value, inline=True)
+            embed.add_field(
+                name=name,
+                value=f'{value}\nCost: 🍪 {bignum(price)}',
+                inline=True
+            )
 
         view = Shop(await UpgradeSelect.get_options(user.id))
 

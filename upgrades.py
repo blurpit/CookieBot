@@ -55,3 +55,22 @@ class PassiveUpgrade(Upgrade):
         if level <= 0:
             return 0
         return self.price_func(level)
+
+class SwindleUpgrade(Upgrade):
+    def __init__(self, emoji, name, prob_func, price_func, hide=False):
+        super().__init__(emoji, name, '', hide)
+        self.prob_func = prob_func
+        self.price_func = price_func
+
+    def get_cookies_per_unit(self, level: int) -> int:
+        return 0
+
+    def get_probability(self, level: int):
+        if level <= 0:
+            return 0
+        return self.prob_func(level)
+
+    def get_price(self, level: int) -> int:
+        if level <= 0:
+            return 0
+        return self.price_func(level)
