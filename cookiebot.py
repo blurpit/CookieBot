@@ -497,8 +497,11 @@ async def jar(interaction: d.Interaction):
 @bot.tree.command()
 async def upgrades(interaction: d.Interaction):
     """ view & purchase upgrades """
-    msg = await make_upgrades_message(interaction.user)
-    await interaction.response.send_message(**msg)
+    user = interaction.user
+    await interaction.response.send_message(**await make_upgrades_message(user))
+    message: d.Message = await interaction.original_response()
+    async with bot.db:
+        bot.db.set_upgrade_message_owner_id(message.id, user.id)
 
 @bot.tree.command()
 async def progress(interaction: d.Interaction):
