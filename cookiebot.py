@@ -1,5 +1,6 @@
 import random
 from datetime import datetime
+from fractions import Fraction
 from io import BytesIO
 
 import discord as d
@@ -161,7 +162,7 @@ class CookieClicker(d.ui.View):
 
                     if user_id == first_user_id:
                         # Clicker is first. Backfire
-                        num_stolen = int(first_cookies * SWINDLE_BACKFIRE_AMOUNT)
+                        num_stolen = int(first_cookies * Fraction(SWINDLE_BACKFIRE_AMOUNT))
                         swindle_msg = random.choice(SWINDLE_BACKFIRE_QUOTES)
                         # Choose a random person
                         participants = bot.db.get_participants_user_ids()
@@ -170,7 +171,7 @@ class CookieClicker(d.ui.View):
                         user = bot.get_user(user_id)
                     else:
                         # Clicker steals from first
-                        num_stolen = int(first_cookies * SWINDLE_AMOUNT)
+                        num_stolen = int(first_cookies * Fraction(SWINDLE_AMOUNT))
                         swindle_msg = random.choice(SWINDLE_QUOTES)
 
                     # Remove num_stolen from first place and give it to the thief
