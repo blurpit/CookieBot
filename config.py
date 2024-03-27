@@ -15,8 +15,6 @@ COOKIE_UPDATE_RATE = 5
 DISCORD_UPDATE_RATE = 30
 # Cookie button cooldown
 COOKIE_COOLDOWN = 60
-# Multiplication factor for upgrade CPS to upgrade price
-PRICE_FACTOR = 200
 # Range of cookies obtainable from the button
 COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
 # Number of decimal places to show bignums
@@ -39,6 +37,7 @@ def blurbot_cps(lvl):
     else:
         return -10**96
 
+PRICE_FACTOR = 200
 UPGRADES: list[Upgrade] = [
     ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 4),            exp(4*100, 4)),
     ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(1000, 1000),        exp(8*1000, 1000)),
