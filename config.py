@@ -40,7 +40,8 @@ def blurbot_cps(lvl):
         return -10**96
 
 UPGRADES: list[Upgrade] = [
-    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 2),            exp(800, 2)),
+    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 4),            exp(4*100, 4)),
+    ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(1000, 1000),        exp(8*1000, 1000)),
     PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(PRICE_FACTOR*1, 1.75)),
     PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(PRICE_FACTOR*50, 2)),
     PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(PRICE_FACTOR*5000, 8)),
