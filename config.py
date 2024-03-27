@@ -1,5 +1,6 @@
 import functools
 import logging
+import math
 
 from discord import Object
 
@@ -32,6 +33,15 @@ def exp(coeff, base):
         return round(coeff * pow(base, lvl - 1))
     return f
 
+def lin(yint, slope):
+    @functools.cache
+    def f(lvl):
+        return yint + (lvl - 1) * slope
+    return f
+
+def cap(f, max_lvl):
+    return lambda lvl: f(lvl) if lvl <= max_lvl else math.inf
+
 def blurbot_price(_):
     return 69 * 10 ** 68
 
@@ -53,7 +63,7 @@ UPGRADES: list[Upgrade] = [
     PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
     PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
     PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
-    SwindleUpgrade(shell, 'Blue Shell',                  lambda l: 1,            lambda l: 0, hide=True)
+    SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**6), 15), hide=True)
 ]
 
 COOKIE_QUOTES = [
