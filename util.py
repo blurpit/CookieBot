@@ -145,13 +145,14 @@ def roman(n: int):
     return hundreds + tens + ones
 
 def num_suffix(n: int):
-    digit = str(n)[-1]
-    if digit == '1':
-        return 'st'
-    elif digit == '2':
-        return 'nd'
-    elif digit == '3':
-        return 'rd'
+    if not (10 < n < 20):
+        digit = str(n)[-1]
+        if digit == '1':
+            return 'st'
+        elif digit == '2':
+            return 'nd'
+        elif digit == '3':
+            return 'rd'
     return 'th'
 
 def percent(p):
