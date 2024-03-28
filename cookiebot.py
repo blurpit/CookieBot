@@ -428,12 +428,9 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
 
 async def make_progess_message(user: d.User) -> dict:
     async with bot.db:
-        cps = bot.db.get_cookies_per_second(bot.upgrades, user.id)
         cookies = bot.db.get_cookies(user.id)
-        ranks = [
-            (bot.db.get_cookies(user_id), user_id)
-            for user_id in bot.db.get_participants_user_ids()
-        ]
+        cps = bot.db.get_cookies_per_second(bot.upgrades, user.id)
+        ranks = bot.db.get_ranks(bot.upgrades)
 
     # Time to reach 1 googol
     if cookies > 10 ** 100:
@@ -459,14 +456,12 @@ async def make_progess_message(user: d.User) -> dict:
             msg += " You making cookies so fast and still so long? Me think more upgrades!"
         else:
             # More than 1 week left
-            msg += (
-                ' Too long... Me no want to wait that long, you that patient? '
-                'You should make cookie faster!')
+            msg += (' Too long... Me no want to wait that long, you that patient? '
+                    'You should make cookie faster!')
 
-    # Time to overtake next place
-    ranks.sort(reverse=True)
+    # Find this user's rank
     msg += '\n\n'
-    for i, (_, user_id) in enumerate(ranks):
+    for i, (_, _, user_id) in enumerate(ranks):
         if user_id == user.id:
             break
     else:
@@ -479,17 +474,15 @@ async def make_progess_message(user: d.User) -> dict:
         # First place
         msg += "🏆 You're in first place! Me and everyone else very proud of you."
     else:
-        cookies2, user_id2 = ranks[i - 1]
+        # Time to overtake the next player
+        cookies2, cps2, user_id2 = ranks[i - 1]
         user2 = bot.get_user(user_id2)
         cookie_diff = cookies2 - cookies + 1
-        msg += (
-            f"You're in **{i + 1}{num_suffix(i + 1)}** place! You need **🍪 {bignum(cookie_diff)}** "
-            f"to overtake **{user2.display_name}** for {i}{num_suffix(i)} place!")
+        msg += (f"You're in **{i + 1}{num_suffix(i + 1)}** place! You need **🍪 {bignum(cookie_diff)}** "
+                f"to overtake **{user2.display_name}** for {i}{num_suffix(i)} place!")
         if cps > 0:
             seconds = cookie_diff // cps
-            msg += (
-                f" At current cookie rate, it'll take only **{time_str(seconds)}** to get "
-                f"that many cookies!")
+            msg += f" At **+{bignum(cps)} / sec**, it'll take only **{time_str(seconds)}** to get that many cookies!"
         msg += " Keep going!"
 
     return dict(content=msg)
