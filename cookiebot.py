@@ -294,7 +294,9 @@ class UpgradeSelect(d.ui.Select):
                 f"Hey those upgrades are for **{owner_user.display_name}**! It not nice to take other people's cookies.",
                 ephemeral=True
             )
-        elif balance < price:
+            return
+
+        if balance < price:
             # can't afford
             await interaction.response.send_message(
                 "Hey!! You no have enough cookie for that!",
@@ -306,8 +308,10 @@ class UpgradeSelect(d.ui.Select):
                 f'Purchased **{upgrade.name} {roman(level)}**!\nThank for the cookies!! nom nom nom',
                 ephemeral=True
             )
-            msg = await make_upgrades_message(interaction.user)
-            await interaction.message.edit(**msg)
+
+        # Edit original message (to remove selected option)
+        msg = await make_upgrades_message(interaction.user)
+        await interaction.message.edit(**msg)
 
     @staticmethod
     def get_options(upgrade_levels: list[int]) -> list[d.SelectOption]:
