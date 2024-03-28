@@ -197,7 +197,10 @@ class CookieClicker(d.ui.View):
 
         # Build and send response
         if cooldown > 0:
-            await interaction.response.send_message(f"All out of cookies! Me bake more cookie in {time_str(cooldown)}")
+            await interaction.response.send_message(
+                f"All out of cookies! Me bake more cookie in {time_str(cooldown)}",
+                ephemeral=True
+            )
             return
 
         # Disable button and force leaderboard update
