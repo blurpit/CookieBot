@@ -224,6 +224,7 @@ class CookieClicker(d.ui.View):
             await interaction.channel.send(swindle_msg)
 
     @d.ui.button(label='My upgrades', style=d.ButtonStyle.gray, emoji='⬆️', custom_id='upgrades-btn')
+    @catch_errors
     async def upgrades(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
         await interaction.response.send_message(**await make_upgrades_message(user))
@@ -232,6 +233,7 @@ class CookieClicker(d.ui.View):
             bot.db.set_upgrade_message_owner_id(message.id, user.id)
 
     @d.ui.button(label='My progress', style=d.ButtonStyle.gray, emoji='📈', custom_id='progress-btn')
+    @catch_errors
     async def progress(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
         msg = await make_progess_message(user)
@@ -260,6 +262,7 @@ class UpgradeSelect(d.ui.Select):
             row=0
         )
 
+    @catch_errors
     async def callback(self, interaction: d.Interaction):
         async with bot.db:
             user_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
@@ -321,6 +324,7 @@ class UpgradeSelect(d.ui.Select):
             ))
 
         return options
+
 
 # --- Complex message makers --- #
 
@@ -487,14 +491,17 @@ async def make_progess_message(user: d.User) -> dict:
 
     return dict(content=msg)
 
+
 # --- Commands --- #
 
 @bot.tree.command()
+@catch_errors
 async def hello(interaction: d.Interaction):
     """ wake up babe its time for another april fools bot """
     await interaction.response.send_message(f'Hellooo {interaction.user.mention}', ephemeral=True)
 
 @bot.tree.command()
+@catch_errors
 async def jar(interaction: d.Interaction):
     """ how many cookies in your jar """
     async with bot.db:
@@ -511,6 +518,7 @@ async def jar(interaction: d.Interaction):
     await interaction.response.send_message(msg)
 
 @bot.tree.command()
+@catch_errors
 async def upgrades(interaction: d.Interaction):
     """ view & purchase upgrades """
     user = interaction.user
@@ -520,14 +528,17 @@ async def upgrades(interaction: d.Interaction):
         bot.db.set_upgrade_message_owner_id(message.id, user.id)
 
 @bot.tree.command()
+@catch_errors
 async def progress(interaction: d.Interaction):
     """ your cookie progress """
     msg = await make_progess_message(interaction.user)
     await interaction.response.send_message(**msg)
 
+
 # --- Dev commands --- #
 
 @bot.tree.command()
+@catch_errors
 async def clicker(interaction: d.Interaction, channel_id: str):
     """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
     try:
@@ -546,6 +557,7 @@ async def clicker(interaction: d.Interaction, channel_id: str):
     await interaction.response.send_message(f'New clicker message sent in #{channel}')
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
     """ [Dev] set cookies for a given user """
     cookies = int(cookies)
@@ -554,6 +566,7 @@ async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
     await interaction.response.send_message(f'set {user} cookies to {cookies}')
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: int, level: int | None):
     """ [Dev] set the upgrade level for a given user. If level is not given, increase by 1 """
     if upgrade_id < 0 or upgrade_id >= len(bot.upgrades):
@@ -570,6 +583,7 @@ async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: i
     await interaction.response.send_message(f'set {upgrade_id} ({upgrade.name}) for {user} to lv.{level}')
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def reset(interaction: d.Interaction, user: d.Member | None = None):
     """ [Dev] reset all data for a given user, or everyone if a user is not provided """
     async with bot.db:
@@ -581,6 +595,7 @@ async def reset(interaction: d.Interaction, user: d.Member | None = None):
     await interaction.response.send_message(f"reset {user or 'everyone'}")
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def clear_upgrade_message_storage(interaction: d.Interaction):
     """ [Dev] clears all associations between upgrade messages and their owners """
     async with bot.db:
@@ -588,6 +603,7 @@ async def clear_upgrade_message_storage(interaction: d.Interaction):
     await interaction.response.send_message('upgrade message owners deleted')
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def clear_cached_cpc_cps(interaction: d.Interaction):
     """ [Dev] clear cpc & cps cache. Only necessary if upgrade config changes """
     async with bot.db:
@@ -595,6 +611,7 @@ async def clear_cached_cpc_cps(interaction: d.Interaction):
     await interaction.response.send_message('cpc & cps cache cleared')
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def print_db(interaction: d.Interaction):
     """ [Dev] print the entire database """
     async with bot.db:
@@ -609,6 +626,7 @@ async def print_db(interaction: d.Interaction):
         await interaction.response.send_message(f"```\n{j}\n```")
 
 @bot.tree.command(guild=DEV_GUILD)
+@catch_errors
 async def kill(interaction: d.Interaction):
     """ [Dev] kill the bot """
     await interaction.response.send_message('killing...')

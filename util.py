@@ -1,7 +1,7 @@
 import functools
 import math
 
-import discord as d
+from discord import DiscordException, Interaction
 
 from config import BIGNUM_PLACES
 
@@ -33,16 +33,16 @@ def catch_errors(f):
     return wrapper
 
 async def _interaction_respond(args, msg):
-    i: d.Interaction | None = None
-    if len(args) > 0 and isinstance(args[0], d.Interaction):
+    i: Interaction | None = None
+    if len(args) > 0 and isinstance(args[0], Interaction):
         i = args[0]
-    elif len(args) > 1 and isinstance(args[1], d.Interaction):
+    elif len(args) > 1 and isinstance(args[1], Interaction):
         i = args[1]
 
     if i is None:
         return
     if i.is_expired():
-        raise d.DiscordException("Interaction expired")
+        raise DiscordException("Interaction expired")
 
     if isinstance(msg, str):
         msg = dict(content=msg)
