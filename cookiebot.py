@@ -215,7 +215,8 @@ class CookieClicker(d.ui.View):
             # Fill in message template
             swindled_user = bot.get_user(first_user_id)
             swindler_user = bot.get_user(swindler_user_id)
-            swindle_msg = swindle_quote.replace('{a}', swindled_user.mention) \
+            swindle_msg = swindle_quote \
+                .replace('{a}', swindled_user.mention) \
                 .replace('{b}', swindler_user.mention) \
                 .replace('{n}', bignum(num_swindled))
 
