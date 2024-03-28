@@ -282,7 +282,7 @@ class UpgradeSelect(d.ui.Select):
             balance = bot.db.get_cookies(user_id)
 
             # Level up!
-            if balance < price:
+            if balance >= price:
                 bot.db.set_upgrade_level(bot.upgrades, user_id, upgrade_id, level)
                 bot.db.add_cookies(user_id, -price)
 
