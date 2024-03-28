@@ -4,7 +4,7 @@ import math
 from datetime import datetime
 
 from upgrades import Upgrade
-from util import DbBreak
+from util import Break
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -24,11 +24,11 @@ class Database:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._data is not None:
-            if exc_type is None or isinstance(exc_val, DbBreak):
+            if exc_type is None or isinstance(exc_val, Break):
                 self.save()
             self._data = None
             self._lock.release()
-            return isinstance(exc_val, DbBreak)
+            return isinstance(exc_val, Break)
 
     def save(self):
         """ Save the database to the file """

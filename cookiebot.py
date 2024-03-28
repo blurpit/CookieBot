@@ -158,7 +158,7 @@ class CookieClicker(d.ui.View):
             # Check cooldown
             if cooldown > 0:
                 log.warning(f'{user.name} tried to click but {cooldown}s left on cooldown')
-                raise DbBreak()
+                raise Break()
 
             clicker_user_id = user.id
 
@@ -262,47 +262,48 @@ class UpgradeSelect(d.ui.Select):
 
     async def callback(self, interaction: d.Interaction):
         async with bot.db:
-            owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
-            if owner_id is None:
-                return # Message isn't saved, just don't respond.
-            user = bot.get_user(owner_id)
+            user_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
+
+            # If the message isn't saved, just don't respond
+            if user_id is None:
+                return
 
             # Check that this user owns the message
-            if owner_id != interaction.user.id:
-                fail = 'wrong_user'
-                msg = None
-            else:
-                upgrade = bot.upgrades[int(self.values[0])]
-                level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
-                price = upgrade.get_price(level)
-                balance = bot.db.get_cookies(user.id)
+            if user_id != interaction.user.id:
+                raise Break()
 
-                # Check that the user has enough cookies
-                if balance < price:
-                    fail = 'cant_afford'
-                else:
-                    bot.db.set_upgrade_level(bot.upgrades, user.id, upgrade.id, level)
-                    bot.db.add_cookies(user.id, -price)
-                    log.info(f'{user.name} purchased {upgrade.name} lv. {level}')
-                    fail = None
-                msg = await make_upgrades_message(user)
+            upgrade_id = int(self.values[0])
+            upgrade = bot.upgrades[upgrade_id]
+            level = bot.db.get_upgrade_level(user_id, upgrade_id) + 1
+            price = upgrade.get_price(level)
+            balance = bot.db.get_cookies(user_id)
 
-        if fail == 'wrong_user':
+            # Level up!
+            if balance < price:
+                bot.db.set_upgrade_level(bot.upgrades, user_id, upgrade_id, level)
+                bot.db.add_cookies(user_id, -price)
+
+        # Build and send response
+        if user_id != interaction.user.id:
+            # wrong owner
+            owner_user = bot.get_user(user_id)
             await interaction.response.send_message(
-                f"Hey those upgrades are for **{user.display_name}**! It not nice to take other people's cookies.",
+                f"Hey those upgrades are for **{owner_user.display_name}**! It not nice to take other people's cookies.",
                 ephemeral=True
             )
-        elif fail == 'cant_afford':
+        elif balance < price:
+            # can't afford
             await interaction.response.send_message(
                 "Hey!! You no have enough cookie for that!",
                 ephemeral=True
             )
         else:
+            # success
             await interaction.response.send_message(
                 f'Purchased **{upgrade.name} {roman(level)}**!\nThank for the cookies!! nom nom nom',
                 ephemeral=True
             )
-        if msg is not None:
+            msg = await make_upgrades_message(interaction.user)
             await interaction.message.edit(**msg)
 
     @staticmethod
