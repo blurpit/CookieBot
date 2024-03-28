@@ -192,14 +192,16 @@ class CookieClicker(d.ui.View):
                 bot.db.add_cookies(first_user_id, -num_swindled)
                 bot.db.add_cookies(swindler_user_id, num_swindled)
 
-        # Disable button and force leaderboard update
-        button.disabled = True
-        bot.clicker_message_updater.restart()
-
         # Build and send response
         if cooldown > 0:
             await interaction.response.send_message(f"All out of cookies! Me bake more cookie in {time_str(cooldown)}")
             return
+
+        # Disable button and force leaderboard update
+        button.disabled = True
+        bot.clicker_message_updater.restart()
+
+        # Make cookie quote
         quote = random.choice(COOKIE_QUOTES)
         msg = f'{quote}\nYou got 🍪 **{bignum(num)}** cookies! Om nom nom nom'
         await interaction.response.send_message(msg, ephemeral=True)
