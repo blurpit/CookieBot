@@ -153,16 +153,19 @@ class CookieClicker(d.ui.View):
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
         user = interaction.user
         async with bot.db:
-            cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
+            # Check clicker message ID (if someone clicks an old clicker message, just ignore it)
+            clicker_message_id = bot.db.get_clicker_message_id()
+            if clicker_message_id != interaction.message.id:
+                return
 
             # Check cooldown
+            cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
             if cooldown > 0:
                 log.warning(f'{user.name} tried to click but {cooldown}s left on cooldown')
                 raise Break()
 
-            clicker_user_id = user.id
-
             # Give cookies
+            clicker_user_id = user.id
             base_num = random.randint(*COOKIE_RANGE)
             num = base_num + bot.db.get_cookies_per_click(bot.upgrades, clicker_user_id)
             bot.db.add_cookies(clicker_user_id, num)
