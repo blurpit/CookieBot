@@ -28,6 +28,7 @@ class Database:
                 self.save()
             self._data = None
             self._lock.release()
+            return isinstance(exc_val, DbBreak)
 
     def save(self):
         """ Save the database to the file """
