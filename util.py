@@ -1,8 +1,26 @@
+import functools
 import math
 
-from config import BIGNUM_PLACES, UPGRADES
-from upgrades import SwindleUpgrade
+from config import BIGNUM_PLACES
 
+
+def exp(coeff, base):
+    """ returns an exponential function f(x) = coeff * base ^ (x-1) """
+    @functools.cache
+    def f(lvl):
+        return round(coeff * pow(base, lvl - 1))
+    return f
+
+def lin(yint, slope):
+    """ returns a linear function f(x) = yint + (x-1) * slope """
+    @functools.cache
+    def f(lvl):
+        return yint + (lvl - 1) * slope
+    return f
+
+def cap(f, max_lvl):
+    """ returns a function with an input cap on f """
+    return lambda lvl: f(lvl) if lvl <= max_lvl else math.inf
 
 def time_str(s):
     seconds = math.ceil(s)
@@ -92,16 +110,3 @@ def percent(p):
     if p % 1 == 0:
         p = int(p)
     return f'{p}%'
-
-def print_upgrade_values(to_level=20):
-    for u in UPGRADES:
-        print(u.name)
-        print('{:<8} {:<25} {}'.format('Lv.', 'Cost', f'🍪/{u.unit}'))
-        for lvl in range(1, to_level + 1):
-            price = u.get_price(lvl)
-            if isinstance(u, SwindleUpgrade):
-                val = percent(u.get_probability(lvl))
-            else:
-                val = bignum(u.get_cookies_per_unit(lvl))
-            print('{:<8} {:<25} {}'.format(lvl, bignum(price), val))
-        print()

@@ -8,6 +8,7 @@ from discord.ext import tasks
 
 from config import *
 from database import Database
+from upgrades import ClickUpgrade, PassiveUpgrade, SwindleUpgrade, Upgrade
 from util import *
 
 # --- Bot --- #
@@ -22,6 +23,21 @@ log.addHandler(log_handler)
 class CookieBot(d.Client):
     def __init__(self):
         self.db = Database('data/db.json')
+
+        f = 60 # price scale factor
+        shell = '<:blueshell:1222371607784198215>'
+        self.upgrades: list[Upgrade] = [
+            ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 8),            exp(2*100, 8)),
+            ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(10**6, 6000),       exp(2*10**6, 6000)),
+            PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(f*1, 1.75)),
+            PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(f*50, 2)),
+            PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(f*5000, 8)),
+            PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        exp(f*150000, 75)),
+            PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(f*500*10**6, 1500)),
+            PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(f*25*10**12, 250000)),
+            PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', lambda l: l+2 if l < 10 else -10**96, lambda _: 69*10**68, hide=True),
+            SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
+        ]
 
         intents = d.Intents.default()
         # intents.message_content = True
@@ -88,7 +104,7 @@ class CookieBot(d.Client):
         """ Updates the database cookie count. Does not use discord api. """
         async with self.db:
             for user_id in self.db.get_participants_user_ids():
-                cps = self.db.get_cookies_per_second(user_id)
+                cps = self.db.get_cookies_per_second(self.upgrades, user_id)
                 self.db.add_cookies(user_id, cps * COOKIE_UPDATE_RATE)
 
     @cookie_updater.before_loop
@@ -145,7 +161,7 @@ class CookieClicker(d.ui.View):
                 quote = random.choice(COOKIE_QUOTES)
                 base_num = random.randint(*COOKIE_RANGE)
 
-                num = base_num + bot.db.get_cookies_per_click(user_id)
+                num = base_num + bot.db.get_cookies_per_click(bot.upgrades, user_id)
                 bot.db.add_cookies(user_id, num)
                 bot.db.set_last_clicked_time()
                 bot.db.set_last_clicked_user_id(user_id)
@@ -155,8 +171,8 @@ class CookieClicker(d.ui.View):
 
                 # Swindling
                 swindle_msg = None
-                if random.random() < bot.db.get_swindle_probability(user_id):
-                    ranks = bot.db.get_ranks()
+                if random.random() < bot.db.get_swindle_probability(bot.upgrades, user_id):
+                    ranks = bot.db.get_ranks(bot.upgrades)
                     first_cookies, _, first_user_id = ranks[0]
                     first_user = bot.get_user(first_user_id)
 
@@ -238,7 +254,7 @@ class UpgradeSelect(d.ui.Select):
                 fail = 'wrong_user'
                 msg = None
             else:
-                upgrade = UPGRADES[int(self.values[0])]
+                upgrade = bot.upgrades[int(self.values[0])]
                 level = bot.db.get_upgrade_level(user.id, upgrade.id) + 1
                 price = upgrade.get_price(level)
                 balance = bot.db.get_cookies(user.id)
@@ -247,7 +263,7 @@ class UpgradeSelect(d.ui.Select):
                 if balance < price:
                     fail = 'cant_afford'
                 else:
-                    bot.db.set_upgrade_level(user.id, upgrade.id, level)
+                    bot.db.set_upgrade_level(bot.upgrades, user.id, upgrade.id, level)
                     bot.db.add_cookies(user.id, -price)
                     log.info(f'{user.name} purchased {upgrade.name} lv. {level}')
                     fail = None
@@ -275,24 +291,12 @@ class UpgradeSelect(d.ui.Select):
     async def get_options(user_id: int) -> list[d.SelectOption]:
         async with bot.db:
             options = []
-            for upgrade, level in zip(UPGRADES, bot.db.get_upgrade_levels(user_id)):
-                price = upgrade.get_price(level + 1)
-
-                if isinstance(upgrade, SwindleUpgrade):
-                    if level == 0 and upgrade.hide:
-                        desc = '???'
-                    else:
-                        prob = upgrade.get_probability(level + 1)
-                        desc = percent(prob)
-                else:
-                    num = upgrade.get_cookies_per_unit(level + 1)
-                    if upgrade.hide and not bot.db.does_someone_own(upgrade.id, level + 1):
-                        num = '???'
-                    desc = f'+{bignum(num)} / {upgrade.unit}'
-
+            for upgrade, level in zip(bot.upgrades, bot.db.get_upgrade_levels(bot.upgrades, user_id)):
+                price = bignum(upgrade.get_price(level + 1))
+                value = upgrade.get_value_str(level + 1, hide=True)
                 options.append(d.SelectOption(
                     label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
-                    description=f'🍪 {bignum(price)} ⬆️ {desc}',
+                    description=f'🍪 {price} ⬆️ {value}',
                     emoji=upgrade.emoji,
                     value=upgrade.id
                 ))
@@ -339,7 +343,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
             embed = d.Embed(color=d.Color.blue())
             embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
 
-            ranks = bot.db.get_ranks()
+            ranks = bot.db.get_ranks(bot.upgrades)
             for i, (cookies, cps, user_id) in enumerate(ranks[:25], 1):
                 name = bot.get_user(user_id).display_name
                 if i == 1:
@@ -366,32 +370,20 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
         embed = d.Embed(color=d.Color.blue())
         embed.title = f"{user.display_name}'s upgrades"
 
-        cps = bot.db.get_cookies_per_second(user.id)
-        cpc = bot.db.get_cookies_per_click(user.id)
-        levels = bot.db.get_upgrade_levels(user.id)
+        cpc = bot.db.get_cookies_per_click(bot.upgrades, user.id)
+        cps = bot.db.get_cookies_per_second(bot.upgrades, user.id)
+        levels = bot.db.get_upgrade_levels(bot.upgrades, user.id)
         embed.description = f'**👆 +{bignum(cpc)} / click**\n**🕙 +{bignum(cps)} / sec**'
 
-        for upgrade in UPGRADES:
+        for upgrade in bot.upgrades:
             level = levels[upgrade.id]
             name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
-            price = upgrade.get_price(level + 1)
-
-            if isinstance(upgrade, SwindleUpgrade):
-                prob = upgrade.get_probability(level)
-                if level > 0:
-                    value = f"**{percent(prob)}** chance to **swindle** {percent(SWINDLE_AMOUNT)} of 1st place's cookies when clicking the button"
-                else:
-                    value = '???'
-            else:
-                num = upgrade.get_cookies_per_unit(level)
-                if level > 0:
-                    value = f'**+{bignum(num)} / {upgrade.unit}**'
-                else:
-                    value = 'Not purchased yet!'
+            desc = upgrade.get_description(level)
+            price = bignum(upgrade.get_price(level + 1))
 
             embed.add_field(
                 name=name,
-                value=f'{value}\nCost: 🍪 {bignum(price)}',
+                value=f'{desc}\nCost: 🍪 {price}',
                 inline=True
             )
 
@@ -405,7 +397,7 @@ async def make_upgrades_message(user: d.User | d.Member) -> dict:
 
 async def make_progess_message(user: d.User) -> dict:
     async with bot.db:
-        cps = bot.db.get_cookies_per_second(user.id)
+        cps = bot.db.get_cookies_per_second(bot.upgrades, user.id)
         cookies = bot.db.get_cookies(user.id)
         ranks = [
             (bot.db.get_cookies(user_id), user_id)
@@ -540,7 +532,7 @@ async def set_cookies(interaction: d.Interaction, user: d.Member, cookies: str):
 @bot.tree.command(guild=DEV_GUILD)
 async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: int, level: int | None):
     """ [Dev] set the upgrade level for a given user. If level is not given, increase by 1 """
-    if upgrade_id < 0 or upgrade_id >= len(UPGRADES):
+    if upgrade_id < 0 or upgrade_id >= len(bot.upgrades):
         await interaction.response.send_message('invalid upgrade id')
         return
 
@@ -548,9 +540,9 @@ async def give_upgrade(interaction: d.Interaction, user: d.Member, upgrade_id: i
         if level is None:
             level = bot.db.get_upgrade_level(user.id, upgrade_id) + 1
         level = max(level, 0)
-        bot.db.set_upgrade_level(user.id, upgrade_id, level)
+        bot.db.set_upgrade_level(bot.upgrades, user.id, upgrade_id, level)
 
-    upgrade = UPGRADES[upgrade_id]
+    upgrade = bot.upgrades[upgrade_id]
     await interaction.response.send_message(f'set {upgrade_id} ({upgrade.name}) for {user} to lv.{level}')
 
 @bot.tree.command(guild=DEV_GUILD)

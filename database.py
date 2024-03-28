@@ -3,8 +3,7 @@ import json
 import math
 from datetime import datetime
 
-from config import UPGRADES
-from upgrades import ClickUpgrade, PassiveUpgrade, SwindleUpgrade
+from upgrades import Upgrade
 
 _1970 = datetime(1970, 1, 1).isoformat()
 
@@ -104,12 +103,12 @@ class Database:
         """ Adds cookies to a given user's count """
         self.set_cookies(user_id, self.get_cookies(user_id) + cookies)
 
-    def get_ranks(self) -> list[tuple[int, int, int]]:
+    def get_ranks(self, upgrades: list[Upgrade]) -> list[tuple[int, int, int]]:
         """ Sorted list of (cookie count, CPS, user id) with highest cookies first """
         ranks = []
         for user_id in self.get_participants_user_ids():
             cookies = self.get_cookies(user_id)
-            cps = self.get_cookies_per_second(user_id)
+            cps = self.get_cookies_per_second(upgrades, user_id)
             ranks.append((cookies, cps, user_id))
         ranks.sort(reverse=True)
         return ranks
@@ -131,10 +130,10 @@ class Database:
 
     # --- Upgrades --- #
 
-    def get_upgrade_levels(self, user_id: int) -> list[int]:
+    def get_upgrade_levels(self, upgrades: list[Upgrade], user_id: int) -> list[int]:
         """ Returns a list of levels for the upgrades the given user owns (indices
-            match config.UPGRADES) """
-        levels = [0] * len(UPGRADES)
+            match given upgrades list) """
+        levels = [0] * len(upgrades)
         for id, level in self._data['upgrades'].get(str(user_id), {}).items():
             levels[int(id)] = level
         return levels
@@ -143,47 +142,44 @@ class Database:
         """ Level of a specific upgrade """
         return self._data['upgrades'].get(str(user_id), {}).get(str(upgrade_id), 0)
 
-    def get_cookies_per_second(self, user_id: int) -> int:
+    def get_cookies_per_second(self, upgrades: list[Upgrade], user_id: int) -> int:
         """ Number of cookies a given user gets each second through passive upgrades """
         if str(user_id) in self._data['cps_cache']:
             return self._data['cps_cache'][str(user_id)]
         cps = sum(
-            UPGRADES[i].get_cookies_per_unit(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
-            if isinstance(UPGRADES[i], PassiveUpgrade)
+            upgrades[i].get_cookies_per_second(level)
+            for i, level in enumerate(self.get_upgrade_levels(upgrades, user_id))
         )
         self._data['cps_cache'][str(user_id)] = cps
         return cps
 
-    def get_cookies_per_click(self, user_id: int) -> int:
+    def get_cookies_per_click(self, upgrades: list[Upgrade], user_id: int) -> int:
         """ Number of cookies a given user gets from clicking due to upgrades.
             Does not include the base number of cookies the button gives. """
         if str(user_id) in self._data['cpc_cache']:
             return self._data['cpc_cache'][str(user_id)]
         cpc = sum(
-            UPGRADES[i].get_cookies_per_unit(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
-            if isinstance(UPGRADES[i], ClickUpgrade)
+            upgrades[i].get_cookies_per_click(level)
+            for i, level in enumerate(self.get_upgrade_levels(upgrades, user_id))
         )
         self._data['cpc_cache'][str(user_id)] = cpc
         return cpc
 
-    def get_swindle_probability(self, user_id: int) -> float:
+    def get_swindle_probability(self, upgrades: list[Upgrade],  user_id: int) -> float:
         """ Probability of swindling cookies for the given user """
         return 1 - math.prod(
-            1 - UPGRADES[i].get_probability(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
-            if isinstance(UPGRADES[i], SwindleUpgrade)
+            1 - upgrades[i].get_swindle_probability(level)
+            for i, level in enumerate(self.get_upgrade_levels(upgrades, user_id))
         )
 
-    def get_spent_on_upgrades(self, user_id: int) -> int:
+    def get_spent_on_upgrades(self, upgrades: list[Upgrade], user_id: int) -> int:
         """ How many cookies a given user has spent on upgrades """
         return sum(
-            UPGRADES[i].get_price(level)
-            for i, level in enumerate(self.get_upgrade_levels(user_id))
+            upgrades[i].get_price(level)
+            for i, level in enumerate(self.get_upgrade_levels(upgrades, user_id))
         )
 
-    def set_upgrade_level(self, user_id: int, upgrade_id: int, level: int):
+    def set_upgrade_level(self, upgrades: list[Upgrade], user_id: int, upgrade_id: int, level: int):
         """ Sets the level of an upgrade for a given user """
         if str(user_id) not in self._data['upgrades']:
             self._data['upgrades'][str(user_id)] = {}
@@ -191,13 +187,14 @@ class Database:
         old_level = self._data['upgrades'][str(user_id)].get(str(upgrade_id), 0)
         self._data['upgrades'][str(user_id)][str(upgrade_id)] = level
 
-        # Update cache
-        u = UPGRADES[upgrade_id]
-        cpu_diff = u.get_cookies_per_unit(level) - u.get_cookies_per_unit(old_level)
-        if isinstance(u, ClickUpgrade):
-            self._data['cpc_cache'][str(user_id)] = self._data['cpc_cache'].get(str(user_id), 0) + cpu_diff
-        elif isinstance(u, PassiveUpgrade):
-            self._data['cps_cache'][str(user_id)] = self._data['cps_cache'].get(str(user_id), 0) + cpu_diff
+        # Update caches
+        u = upgrades[upgrade_id]
+        cpc_diff = u.get_cookies_per_click(level) - u.get_cookies_per_click(old_level)
+        cps_diff = u.get_cookies_per_second(level) - u.get_cookies_per_second(old_level)
+        if cpc_diff != 0:
+            self._data['cpc_cache'][str(user_id)] = self._data['cpc_cache'].get(str(user_id), 0) + cpc_diff
+        if cps_diff != 0:
+            self._data['cps_cache'][str(user_id)] = self._data['cps_cache'].get(str(user_id), 0) + cps_diff
 
     def does_someone_own(self, upgrade_id: int, level: int):
         """ True if anyone owns the given upgrade at the given level or higher """

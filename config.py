@@ -1,10 +1,6 @@
-import functools
 import logging
-import math
 
 from discord import Object
-
-from upgrades import ClickUpgrade, PassiveUpgrade, SwindleUpgrade, Upgrade
 
 # Discord guilds
 GUILD = Object(913924123405729812)
@@ -26,45 +22,6 @@ SWINDLE_BACKFIRE_AMOUNT = 0.25
 BIGNUM_PLACES = 3
 # Logger level
 LOG_LEVEL = logging.INFO
-
-def exp(coeff, base):
-    @functools.cache
-    def f(lvl):
-        return round(coeff * pow(base, lvl - 1))
-    return f
-
-def lin(yint, slope):
-    @functools.cache
-    def f(lvl):
-        return yint + (lvl - 1) * slope
-    return f
-
-def cap(f, max_lvl):
-    return lambda lvl: f(lvl) if lvl <= max_lvl else math.inf
-
-def blurbot_price(_):
-    return 69 * 10 ** 68
-
-def blurbot_cps(lvl):
-    if lvl < 10:
-        return lvl + 2
-    else:
-        return -10**96
-
-PRICE_FACTOR = 60
-shell = '<:blueshell:1222371607784198215>'
-UPGRADES: list[Upgrade] = [
-    ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 8),            exp(2*100, 8)),
-    ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(10**6, 6000),       exp(2*10**6, 6000)),
-    PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(PRICE_FACTOR*1, 1.75)),
-    PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(PRICE_FACTOR*50, 2)),
-    PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(PRICE_FACTOR*5000, 8)),
-    PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        exp(PRICE_FACTOR*150000, 75)),
-    PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(PRICE_FACTOR*500*10**6, 1500)),
-    PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(PRICE_FACTOR*25*10**12, 250000)),
-    PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', blurbot_cps,            blurbot_price, hide=True),
-    SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
-]
 
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",
