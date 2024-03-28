@@ -94,11 +94,6 @@ def time_str(s):
         strs.append(f'{y}yr')
     return ' '.join(reversed(strs))
 
-def trunc_str(n, ndigits):
-    p = 10**ndigits
-    n = math.trunc(n * p) / p
-    return f'{n:.{ndigits}f}'.rstrip('0').rstrip('.')
-
 _numnames = [
     'million', 'billion', 'trillion', 'quadrillion', 'quintillion',
     'sextillion', 'septillion', 'octillion', 'nonillion', 'decillion',
@@ -118,17 +113,26 @@ def bignum(n):
     if n < 10_000_000:
         return f'{n:,}'
 
-    exp = len(str(n))-1
+    n_str = str(n)
+    exp = len(n_str) - 1
     mag = exp // 3
     index = mag - 2
     if index < len(_numnames):
-        num = n // (10 ** (3*mag - BIGNUM_PLACES)) / 10**BIGNUM_PLACES
-        num_str = trunc_str(num, BIGNUM_PLACES)
-        return f'{neg}{num_str} {_numnames[index]}'
+        decimal_index = len(n_str) - mag * 3
+        name = ' ' + _numnames[index]
+    elif 100 <= exp <= 102:
+        decimal_index = len(n_str) - 100
+        name = ' googol'
     else:
-        num = n // (10 ** (exp - BIGNUM_PLACES)) / 10**BIGNUM_PLACES
-        num_str = trunc_str(num, BIGNUM_PLACES)
-        return f'{neg}{num_str}e+{exp}'
+        decimal_index = 1
+        name = 'e+' + str(exp)
+
+    a = n_str[:decimal_index]
+    b = n_str[decimal_index:decimal_index + BIGNUM_PLACES].rstrip('0')
+    if b != '':
+        b = '.' + b
+
+    return f'{neg}{a}{b}{name}'
 
 _C = ["", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM"]
 _X = ["", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC"]
