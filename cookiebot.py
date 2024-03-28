@@ -238,7 +238,7 @@ class CookieClicker(d.ui.View):
         await interaction.response.send_message(f"{user.mention} {msg['content']}")
 
 class Shop(d.ui.View):
-    def __init__(self, purchase_options):
+    def __init__(self, purchase_options: list[d.SelectOption]):
         super().__init__(timeout=None)
         self.add_item(UpgradeSelect(purchase_options))
 
@@ -307,19 +307,20 @@ class UpgradeSelect(d.ui.Select):
             await interaction.message.edit(**msg)
 
     @staticmethod
-    async def get_options(user_id: int) -> list[d.SelectOption]:
-        async with bot.db:
-            options = []
-            for upgrade, level in zip(bot.upgrades, bot.db.get_upgrade_levels(bot.upgrades, user_id)):
-                price = bignum(upgrade.get_price(level + 1))
-                value = upgrade.get_value_str(level + 1, hide=True)
-                options.append(d.SelectOption(
-                    label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
-                    description=f'🍪 {price} ⬆️ {value}',
-                    emoji=upgrade.emoji,
-                    value=upgrade.id
-                ))
-            return options
+    def get_options(upgrade_levels: list[int]) -> list[d.SelectOption]:
+        options = []
+        for upgrade, level in zip(bot.upgrades, upgrade_levels):
+            price = bignum(upgrade.get_price(level + 1))
+            value = upgrade.get_value_str(level + 1, hide=True)
+
+            options.append(d.SelectOption(
+                label=f'{upgrade.id + 1}. {upgrade.name} {roman(level + 1)}',
+                description=f'🍪 {price} ⬆️ {value}',
+                emoji=upgrade.emoji,
+                value=upgrade.id
+            ))
+
+        return options
 
 # --- Complex message makers --- #
 
@@ -386,37 +387,44 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
     )
 
 async def make_upgrades_message(user: d.User | d.Member) -> dict:
+    user_id = user.id
     async with bot.db:
-        balance = bot.db.get_cookies(user.id)
-        content = f'## 🍪 {bignum(balance)}\n{user.mention}'
+        balance = bot.db.get_cookies(user_id)
+        cpc = bot.db.get_cookies_per_click(bot.upgrades, user_id)
+        cps = bot.db.get_cookies_per_second(bot.upgrades, user_id)
+        levels = bot.db.get_upgrade_levels(bot.upgrades, user_id)
 
-        embed = d.Embed(color=d.Color.blue())
-        embed.title = f"{user.display_name}'s upgrades"
+    # Cookie balance
+    content = f'## 🍪 {bignum(balance)}\n{user.mention}'
 
-        cpc = bot.db.get_cookies_per_click(bot.upgrades, user.id)
-        cps = bot.db.get_cookies_per_second(bot.upgrades, user.id)
-        levels = bot.db.get_upgrade_levels(bot.upgrades, user.id)
-        embed.description = f'**👆 +{bignum(cpc)} / click**\n**🕙 +{bignum(cps)} / sec**'
+    # Upgrades embed
+    embed = d.Embed(color=d.Color.blue())
+    embed.title = f"{user.display_name}'s upgrades"
 
-        for upgrade in bot.upgrades:
-            level = levels[upgrade.id]
-            name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
-            desc = upgrade.get_description(level)
-            price = bignum(upgrade.get_price(level + 1))
+    # CPC/CPS totals
+    embed.description = f'**👆 +{bignum(cpc)} / click**\n**🕙 +{bignum(cps)} / sec**'
 
-            embed.add_field(
-                name=name,
-                value=f'{desc}\nCost: 🍪 {price}',
-                inline=True
-            )
+    # Individual upgrades
+    for upgrade in bot.upgrades:
+        level = levels[upgrade.id]
+        name = f'{upgrade.id + 1}. {upgrade.emoji} {upgrade.name} {roman(level)}'
+        desc = upgrade.get_description(level)
+        price = bignum(upgrade.get_price(level + 1))
 
-        view = Shop(await UpgradeSelect.get_options(user.id))
-
-        return dict(
-            content=content,
-            embed=embed,
-            view=view
+        embed.add_field(
+            name=name,
+            value=f'{desc}\nCost: 🍪 {price}',
+            inline=True
         )
+
+    # Upgrade selector view
+    view = Shop(UpgradeSelect.get_options(levels))
+
+    return dict(
+        content=content,
+        embed=embed,
+        view=view
+    )
 
 async def make_progess_message(user: d.User) -> dict:
     async with bot.db:
