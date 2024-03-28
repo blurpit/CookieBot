@@ -6,7 +6,12 @@ import discord as d
 from config import BIGNUM_PLACES
 
 
-class InteractionResponse(Exception):
+class DbBreak(Exception):
+    """ If this exception is raised inside an `async with bot.db`, the database will be saved,
+        unlike with other exceptions. """
+    pass
+
+class InteractionResponse(DbBreak):
     def __init__(self, message: str | dict):
         """ Raise this inside a function decorated by @catch_errors to respond to the interaction
             with the given message. Message can be a string or a dict passed to send_message() """
