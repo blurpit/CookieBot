@@ -149,60 +149,77 @@ class CookieClicker(d.ui.View):
         self.button = self.children[0]
 
     @d.ui.button(label='Cookie!', style=d.ButtonStyle.blurple, emoji='🍪', custom_id='cookie-btn')
+    @catch_errors
     async def click(self, interaction: d.Interaction, button: d.ui.Button):
+        user = interaction.user
         async with bot.db:
             cooldown = bot.db.get_cooldown_remaining(COOKIE_COOLDOWN)
+
+            # Check cooldown
             if cooldown > 0:
-                msg = f"All out of cookies! Me bake more cookie in {time_str(cooldown)}!"
-                log.warning(f'{interaction.user.name} tried to click but {cooldown}s is left on cooldown')
-            else:
-                user = interaction.user
-                user_id = user.id
-                quote = random.choice(COOKIE_QUOTES)
-                base_num = random.randint(*COOKIE_RANGE)
+                log.warning(f'{user.name} tried to click but {cooldown}s left on cooldown')
+                raise DbBreak()
 
-                num = base_num + bot.db.get_cookies_per_click(bot.upgrades, user_id)
-                bot.db.add_cookies(user_id, num)
-                bot.db.set_last_clicked_time()
-                bot.db.set_last_clicked_user_id(user_id)
-                bot.db.set_last_clicked_value(num)
-                log.info(f'Click! {user.name} got {num} cookies')
-                msg = f'{quote}\nYou got 🍪 **{bignum(num)}** cookies! Om nom nom nom'
+            clicker_user_id = user.id
 
-                # Swindling
-                swindle_msg = None
-                if random.random() < bot.db.get_swindle_probability(bot.upgrades, user_id):
-                    ranks = bot.db.get_ranks(bot.upgrades)
-                    first_cookies, _, first_user_id = ranks[0]
-                    first_user = bot.get_user(first_user_id)
+            # Give cookies
+            base_num = random.randint(*COOKIE_RANGE)
+            num = base_num + bot.db.get_cookies_per_click(bot.upgrades, clicker_user_id)
+            bot.db.add_cookies(clicker_user_id, num)
+            bot.db.set_last_clicked_time()
+            bot.db.set_last_clicked_user_id(clicker_user_id)
+            bot.db.set_last_clicked_value(num)
+            log.info(f'Click! {user.name} got {num} cookies')
 
-                    if user_id == first_user_id:
-                        # Clicker is first. Backfire
-                        num_stolen = int(first_cookies * Fraction(SWINDLE_BACKFIRE_AMOUNT))
-                        swindle_msg = random.choice(SWINDLE_BACKFIRE_QUOTES)
-                        # Choose a random person
-                        participants = bot.db.get_participants_user_ids()
-                        while user_id == first_user_id:
-                            user_id = random.choice(participants)
-                        user = bot.get_user(user_id)
-                    else:
-                        # Clicker steals from first
-                        num_stolen = int(first_cookies * Fraction(SWINDLE_AMOUNT))
-                        swindle_msg = random.choice(SWINDLE_QUOTES)
+            # Swindling
+            swindle = random.random() < bot.db.get_swindle_probability(bot.upgrades, clicker_user_id)
+            if swindle:
+                ranks = bot.db.get_ranks(bot.upgrades)
+                first_cookies, _, first_user_id = ranks[0]
 
-                    # Remove num_stolen from first place and give it to the thief
-                    bot.db.add_cookies(first_user_id, -num_stolen)
-                    bot.db.add_cookies(user_id, num_stolen)
+                if clicker_user_id == first_user_id:
+                    # Clicker is first. Choose another random swindler
+                    num_swindled = int(first_cookies * Fraction(SWINDLE_BACKFIRE_AMOUNT))
+                    participants = bot.db.get_participants_user_ids()
+                    swindler_user_id = first_user_id
+                    while swindler_user_id == first_user_id:
+                        swindler_user_id = random.choice(participants)
+                else:
+                    # Clicker steals from first
+                    swindler_user_id = clicker_user_id
+                    num_swindled = int(first_cookies * Fraction(SWINDLE_AMOUNT))
 
-                    # Fill in message template
-                    swindle_msg = swindle_msg.replace('{a}', first_user.mention) \
-                                             .replace('{b}', user.mention) \
-                                             .replace('{n}', bignum(num_stolen))
+                bot.db.add_cookies(first_user_id, -num_swindled)
+                bot.db.add_cookies(swindler_user_id, num_swindled)
 
+        # Disable button and force leaderboard update
         button.disabled = True
-        bot.clicker_message_updater.restart() # force update after button press
+        bot.clicker_message_updater.restart()
+
+        # Build and send response
+        if cooldown > 0:
+            await interaction.response.send_message(f"All out of cookies! Me bake more cookie in {time_str(cooldown)}")
+            return
+        quote = random.choice(COOKIE_QUOTES)
+        msg = f'{quote}\nYou got 🍪 **{bignum(num)}** cookies! Om nom nom nom'
         await interaction.response.send_message(msg, ephemeral=True)
-        if swindle_msg is not None:
+
+        # Build and send swindling message
+        if swindle:
+            if swindler_user_id == clicker_user_id:
+                swindle_quote = random.choice(SWINDLE_QUOTES)
+            else:
+                # Backfired
+                swindle_quote = random.choice(SWINDLE_BACKFIRE_QUOTES)
+
+            # Fill in message template
+            swindled_user = bot.get_user(first_user_id)
+            swindler_user = bot.get_user(swindler_user_id)
+            swindle_msg = swindle_quote.replace('{a}', swindled_user.mention) \
+                .replace('{b}', swindler_user.mention) \
+                .replace('{n}', bignum(num_swindled))
+
+            # Send
             await interaction.channel.send(swindle_msg)
 
     @d.ui.button(label='My upgrades', style=d.ButtonStyle.gray, emoji='⬆️', custom_id='upgrades-btn')
