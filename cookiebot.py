@@ -339,47 +339,51 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
         bot.prev_cookie_count = total_cookies
         bot.prev_cooldown_remaining = cooldown
 
-        # Total cookie count display
-        content = f'# 🍪 {bignum(total_cookies)}'
-
         # Last clicked
         last_clicked_user_id = bot.db.get_last_clicked_user_id()
-        if last_clicked_user_id is not None:
-            user = bot.get_user(last_clicked_user_id)
-            value = bot.db.get_last_clicked_value()
-            content += f'\n👆 **+{bignum(value)}** {user.display_name}'
+        last_clicked_value = bot.db.get_last_clicked_value()
 
-        # View and cookie button
-        view = CookieClicker()
-        if cooldown > 0:
-            view.button.disabled = True
-            view.button.label = f'{time_str(cooldown)} ...'
+        # Leaderboard
+        participants = bot.db.get_participants_user_ids()
+        ranks = bot.db.get_ranks(bot.upgrades)
 
-        # Leaderboard embed
-        if len(bot.db.get_participants_user_ids()) == 0:
-            embed = None
-        else:
-            embed = d.Embed(color=d.Color.blue())
-            embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
+    # Total cookie count display
+    content = f'# 🍪 {bignum(total_cookies)}'
 
-            ranks = bot.db.get_ranks(bot.upgrades)
-            for i, (cookies, cps, user_id) in enumerate(ranks[:25], 1):
-                name = bot.get_user(user_id).display_name
-                if i == 1:
-                    name = '🥇 ' + name
-                elif i == 2:
-                    name = '🥈 ' + name
-                elif i == 3:
-                    name = '🥉 ' + name
-                else:
-                    name = f'{i}. {name}'
-                embed.add_field(name=name, value=f'🍪 {bignum(cookies)}\n+{bignum(cps)} / sec', inline=True)
+    # Last clicked
+    if last_clicked_user_id is not None:
+        last_clicked_user = bot.get_user(last_clicked_user_id)
+        content += f'\n👆 **+{bignum(last_clicked_value)}** {last_clicked_user.display_name}'
 
-        return dict(
-            content=content,
-            view=view,
-            embed=embed
-        )
+    # View and cookie button
+    view = CookieClicker()
+    if cooldown > 0:
+        view.button.disabled = True
+        view.button.label = f'{time_str(cooldown)} ...'
+
+    # Leaderboard embed
+    if len(participants) == 0:
+        embed = None
+    else:
+        embed = d.Embed(color=d.Color.blue())
+        embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
+        for i, (cookies, cps, user_id) in enumerate(ranks[:25], 1):
+            name = bot.get_user(user_id).display_name
+            if i == 1:
+                name = '🥇 ' + name
+            elif i == 2:
+                name = '🥈 ' + name
+            elif i == 3:
+                name = '🥉 ' + name
+            else:
+                name = f'{i}. {name}'
+            embed.add_field(name=name, value=f'🍪 {bignum(cookies)}\n+{bignum(cps)} / sec', inline=True)
+
+    return dict(
+        content=content,
+        view=view,
+        embed=embed
+    )
 
 async def make_upgrades_message(user: d.User | d.Member) -> dict:
     async with bot.db:
