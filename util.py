@@ -1,7 +1,51 @@
 import functools
 import math
 
+import discord as d
+
 from config import BIGNUM_PLACES
+
+
+class InteractionResponse(Exception):
+    def __init__(self, message: str | dict):
+        """ Raise this inside a function decorated by @catch_errors to respond to the interaction
+            with the given message. Message can be a string or a dict passed to send_message() """
+        self.message = message
+
+def catch_errors(f):
+    """ Decorator that catches errors and responds to interactions with the error message.
+        If the raised error is not a util.InteractionResponse, the error will be raised again. """
+    @functools.wraps(f)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await f(*args, **kwargs)
+        except InteractionResponse as e:
+            await _interaction_respond(args, e.message)
+        except Exception as e:
+            msg = f"```{type(e).__name__}: {str(e)}```"
+            await _interaction_respond(args, msg)
+            raise e from None
+    return wrapper
+
+async def _interaction_respond(args, msg):
+    i: d.Interaction | None = None
+    if len(args) > 0 and isinstance(args[0], d.Interaction):
+        i = args[0]
+    elif len(args) > 1 and isinstance(args[1], d.Interaction):
+        i = args[1]
+
+    if i is None:
+        return
+    if i.is_expired():
+        raise d.DiscordException("Interaction expired")
+
+    if isinstance(msg, str):
+        msg = dict(content=msg)
+
+    if i.response.is_done():
+        await i.followup.send(**msg)
+    else:
+        await i.response.send_message(**msg)
 
 
 def exp(coeff, base):
