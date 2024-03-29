@@ -29,12 +29,12 @@ class CookieBot(d.Client):
         self.upgrades: list[Upgrade] = [
             ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 8),            exp(2*100, 8)),
             ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(10**6, 6000),       exp(2*10**6, 6000)),
-            PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           exp(f*1, 1.75)),
-            PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             exp(f*50, 2)),
-            PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           exp(f*5000, 8)),
-            PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        exp(f*150000, 75)),
-            PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   exp(f*500*10**6, 1500)),
-            PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), exp(f*25*10**12, 250000)),
+            PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           cap(exp(f*1, 1.75), 25)),
+            PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             cap(exp(f*50, 2), 25)),
+            PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           cap(exp(f*5000, 8), 25)),
+            PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        cap(exp(f*150000, 75), 25)),
+            PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   cap(exp(f*500*10**6, 1500), 25)),
+            PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), cap(exp(f*25*10**12, 250000), 25)),
             PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', lambda l: l+2 if l < 10 else -10**96, lambda _: 69*10**68, hide=True),
             SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
         ]
