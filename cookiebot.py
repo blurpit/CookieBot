@@ -359,6 +359,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
         # Last clicked
         last_clicked_user_id = bot.db.get_last_clicked_user_id()
         last_clicked_value = bot.db.get_last_clicked_value()
+        last_clicked_time = bot.db.get_last_clicked_time()
 
         # Leaderboard
         participants = bot.db.get_participants_user_ids()
@@ -370,7 +371,8 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
     # Last clicked
     if last_clicked_user_id is not None:
         last_clicked_user = bot.get_user(last_clicked_user_id)
-        content += f'\n👆 **+{bignum(last_clicked_value)}** {last_clicked_user.display_name}'
+        last_clicked_ago = int((datetime.utcnow() - last_clicked_time).total_seconds())
+        content += f'\n👆 **+{bignum(last_clicked_value)}** - {last_clicked_user.display_name} {time_str(last_clicked_ago)} ago'
 
     # View and cookie button
     view = CookieClicker()
