@@ -2,6 +2,7 @@ import random
 from datetime import datetime
 from fractions import Fraction
 from io import BytesIO
+from logging.handlers import TimedRotatingFileHandler
 
 import discord as d
 from discord.ext import tasks
@@ -16,7 +17,8 @@ from util import *
 log = logging.getLogger('bot')
 log.setLevel(LOG_LEVEL)
 dt_fmt = '%Y-%m-%d %H:%M:%S'
-log_handler = logging.FileHandler(filename='data/bot.log', encoding='utf-8', mode='w')
+log_handler = TimedRotatingFileHandler('data/bot.log', when='midnight', interval=1, encoding='utf-8')
+log_handler.suffix = '%Y%m%d'
 log_handler.setFormatter(logging.Formatter('[{asctime}] [{levelname:<8}] {name}: {message}', dt_fmt, style='{'))
 log.addHandler(log_handler)
 
