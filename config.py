@@ -68,7 +68,7 @@ SWINDLE_QUOTES = [
     "<:blueshell:1222371607784198215> {a} gave away **{n}** cookies! {b} was very persuasive.",
 ]
 SWINDLE_BACKFIRE_QUOTES = [
-    "<:blueshell:1222371607784198215> {a}tried to swindle from themselves and lost **{n}** cookies! Luckily, {b} was there to pick them up.",
-    "<:blueshell:1222371607784198215> {a}used **swindle**! It hurt itself in its confusion! {b} gained **{n}** cookies.",
-    "<:blueshell:1222371607784198215> {a}hit themselves with a blue shell and gave **{n}** cookies to {b}!",
+    "<:blueshell:1222371607784198215> {a} tried to swindle from themselves and lost **{n}** cookies! Luckily, {b} was there to pick them up.",
+    "<:blueshell:1222371607784198215> {a} used **swindle**! It hurt itself in its confusion! {b} gained **{n}** cookies.",
+    "<:blueshell:1222371607784198215> {a} hit themselves with a blue shell and gave **{n}** cookies to {b}!",
 ]
