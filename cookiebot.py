@@ -26,17 +26,18 @@ class CookieBot(d.Client):
     def __init__(self):
         self.db = Database('data/db.json')
 
-        f = 60 # price scale factor
+        f = 40 # price scale factor
+        L = 30 # level cap
         shell = '<:blueshell:1222371607784198215>'
         self.upgrades: list[Upgrade] = [
             ClickUpgrade  ('👍', 'Facebook Like Button',         exp(100, 8),            exp(2*100, 8)),
             ClickUpgrade  ('🧗‍♀️', 'Girl Scouts Ad Campaign',      exp(10**6, 6000),       exp(2*10**6, 6000)),
-            PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           cap(exp(f*1, 1.75), 25)),
-            PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 2),             cap(exp(f*50, 2), 25)),
-            PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 8),           cap(exp(f*5000, 8), 25)),
-            PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        cap(exp(f*150000, 75), 25)),
-            PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   cap(exp(f*500*10**6, 1500), 25)),
-            PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 250000), cap(exp(f*25*10**12, 250000), 25)),
+            PassiveUpgrade('👨‍🍳', 'Chef Freako',                  exp(1, 1.75),           cap(exp(f*1, 1.75), L)),
+            PassiveUpgrade('🔥', 'Oven Eat the Food',            exp(50, 4),             cap(exp(f*50, 4), L)),
+            PassiveUpgrade('🎤', 'Astley Automator',             exp(5000, 20),          cap(exp(f*5000, 20), L)),
+            PassiveUpgrade('🛠️', 'Home Depot Bakery',            exp(150000, 75),        cap(exp(f*150000, 75), L)),
+            PassiveUpgrade('🏰', 'Crypto Cookie Castle',         exp(500*10**6, 1500),   cap(exp(f*500*10**6, 1500), L)),
+            PassiveUpgrade('🏗️', 'Cookie Construction Company',  exp(25*10**12, 15000),  cap(exp(f*25*10**12, 15000), L)),
             PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...', lambda l: l+2 if l < 10 else -10**96, lambda _: 69*10**68, hide=True),
             SwindleUpgrade(shell, 'Blue Shell',                  lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
         ]
