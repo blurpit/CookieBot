@@ -465,7 +465,8 @@ async def make_progess_message(user: d.User) -> dict:
     # Time to reach 1 googol
     if cookies > 10 ** 100:
         # 1 Googol reached!
-        msg = 'SO MANY COOKIES!!!! Remember cookie taste better when shared with friends!'
+        video = random.choice(CM_VIDEOS)
+        msg = f'YOU DID IT!!!! Me so proud of you! Remember, cookie taste better when shared with friends!\n{video}'
     elif cps < 0:
         # Oh no
         msg = 'Oh no... you losing cookie fast. I give some if you click button, maybe will help?'

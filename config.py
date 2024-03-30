@@ -66,9 +66,20 @@ SWINDLE_QUOTES = [
     "<:blueshell:1222371607784198215> {a} will surely miss the **{n}** cookies that {b} just took!",
     "<:blueshell:1222371607784198215> Cookie monster say stealing cookie is wrong. {b}, apologize to {a} for taking **{n}** cookies!",
     "<:blueshell:1222371607784198215> {a} gave away **{n}** cookies! {b} was very persuasive.",
+    "<:blueshell:1222371607784198215> {b} used **swindle**! It's super effective! {a} fainted and lost **{n}** cookies."
 ]
 SWINDLE_BACKFIRE_QUOTES = [
     "<:blueshell:1222371607784198215> {a} tried to swindle from themselves and lost **{n}** cookies! Luckily, {b} was there to pick them up.",
     "<:blueshell:1222371607784198215> {a} used **swindle**! It hurt itself in its confusion! {b} gained **{n}** cookies.",
     "<:blueshell:1222371607784198215> {a} hit themselves with a blue shell and gave **{n}** cookies to {b}!",
+]
+
+CM_VIDEOS = [
+    'https://www.youtube.com/shorts/XCCPwKkIMiA',
+    'https://www.youtube.com/shorts/gr4jQoHw9zE',
+    'https://www.youtube.com/shorts/g2XAGmKbrp8',
+    'https://www.youtube.com/shorts/mYwhKNzHv5o',
+    'https://www.youtube.com/shorts/ILkjsmHx9Ug',
+    'https://www.youtube.com/shorts/ujMHYkTg-1Y',
+    'https://www.youtube.com/shorts/3R8wXPcWI8A',
 ]
