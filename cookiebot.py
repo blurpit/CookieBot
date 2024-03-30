@@ -3,8 +3,10 @@ from datetime import datetime
 from fractions import Fraction
 from io import BytesIO
 from logging.handlers import TimedRotatingFileHandler
+from typing import Optional
 
 import discord as d
+from discord import User
 from discord.ext import tasks
 
 from config import *
@@ -73,6 +75,12 @@ class CookieBot(d.Client):
 
         # Start cookie updater task
         self.cookie_updater.start()
+
+    async def get_user(self, id: int, /) -> User:
+        user = super().get_user(id)
+        if user:
+            return user
+        return await self.fetch_user(id)
 
     async def set_clicker_message(self, msg: d.Message):
         async with self.db:
@@ -224,8 +232,8 @@ class CookieClicker(d.ui.View):
                 swindle_quote = random.choice(SWINDLE_BACKFIRE_QUOTES)
 
             # Fill in message template
-            swindled_user = bot.get_user(first_user_id)
-            swindler_user = bot.get_user(swindler_user_id)
+            swindled_user = await bot.get_user(first_user_id)
+            swindler_user = await bot.get_user(swindler_user_id)
             swindle_msg = swindle_quote \
                 .replace('{a}', swindled_user.mention) \
                 .replace('{b}', swindler_user.mention) \
@@ -300,7 +308,7 @@ class UpgradeSelect(d.ui.Select):
         # Build and send response
         if user_id != interaction.user.id:
             # wrong owner
-            owner_user = bot.get_user(user_id)
+            owner_user = await bot.get_user(user_id)
             await interaction.response.send_message(
                 f"Hey those upgrades are for **{owner_user.display_name}**! It not nice to take other people's cookies.",
                 ephemeral=True
@@ -373,7 +381,7 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
 
     # Last clicked
     if last_clicked_user_id is not None:
-        last_clicked_user = bot.get_user(last_clicked_user_id)
+        last_clicked_user = await bot.get_user(last_clicked_user_id)
         last_clicked_ago = int((datetime.utcnow() - last_clicked_time).total_seconds())
         content += f'\n👆 **+{bignum(last_clicked_value)}** - {last_clicked_user.display_name} {time_str(last_clicked_ago)} ago'
 
@@ -390,7 +398,8 @@ async def make_clicker_message(allow_skip=True) -> dict | None:
         embed = d.Embed(color=d.Color.blue())
         embed.set_footer(text=f'updates every {time_str(DISCORD_UPDATE_RATE)}')
         for i, (cookies, cps, user_id) in enumerate(ranks[:25], 1):
-            name = bot.get_user(user_id).display_name
+            user = await bot.get_user(user_id)
+            name = user.display_name
             if i == 1:
                 name = '🥇 ' + name
             elif i == 2:
@@ -497,7 +506,7 @@ async def make_progess_message(user: d.User) -> dict:
     else:
         # Time to overtake the next player
         cookies2, cps2, user_id2 = ranks[i - 1]
-        user2 = bot.get_user(user_id2)
+        user2 = await bot.get_user(user_id2)
         cookie_diff = cookies2 - cookies + 1
         msg += (f"You're in **{i + 1}{num_suffix(i + 1)}** place! You need **🍪 {bignum(cookie_diff)}** "
                 f"to overtake **{user2.display_name}** for {i}{num_suffix(i)} place!")
