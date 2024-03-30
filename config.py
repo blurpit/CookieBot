@@ -26,7 +26,7 @@ LOG_LEVEL = logging.INFO
 COOKIE_QUOTES = [
     "C is for cookie, and cookie is for me.",
     # "Om nom nom nom.",
-    "Home is here heart is. Heart where cookie is. Math clear: home is cookie.",
+    "Home is where heart is. Heart where cookie is. Math clear: home is cookie.",
     "Sometimes me think, what is friend? And then me say: a friend is someone to share last cookie with.",
     "Chocolate chip important to me... It mean whole lot to me... Om nom nom nom.",
     "Fruit... or Cookie... Fruit... Cookie… Me Cookie Monster! This No-Brainer!",
