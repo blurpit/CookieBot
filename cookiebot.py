@@ -41,7 +41,7 @@ class CookieBot(d.Client):
             PassiveUpgrade('🏰', 'Crypto Cookie Castle',             exp(500*10**6, 1500),   cap(exp(f*500*10**6, 1500), L)),
             PassiveUpgrade('🏗️', 'Cookie Construction Company',      exp(25*10**12, 15000),  cap(exp(f*25*10**12, 15000), L)),
             PassiveUpgrade('🐢', 'Blurbot ver.1.22474487139...',     lambda l: l+2 if l < 10 else -10**96, lambda _: 69*10**68, hide=True),
-            SwindleUpgrade(shell, 'Blue Shell',                      lin(0.05, 0.025),       cap(exp(10**6, 10**5), 15), hide=True)
+            SwindleUpgrade(shell, 'Blue Shell',                      lin(0.05, 0.025),       cap(exp(10**6, 10**3), 19), hide=True)
         ]
 
         intents = d.Intents.default()
