@@ -47,6 +47,7 @@ class Database:
         self._data.setdefault('clicker_message_id', None)
         self._data.setdefault('clicker_channel_id', None)
         self._data.setdefault('upgrade_message_owner_ids', {})
+        self._data.setdefault('upgrade_refresh_times', {})
         self._data.setdefault('last_clicked_time', _1970)
         self._data.setdefault('last_clicked_user_id', None)
         self._data.setdefault('last_clicked_value', 0)
@@ -83,6 +84,22 @@ class Database:
     def clear_upgrade_message_owner_ids(self):
         """ Deletes all upgrade message owner ids """
         self._data['upgrade_message_owner_ids'].clear()
+
+    def get_upgrade_refresh_cooldown_remaining(self, cooldown: int, user_id: int) -> float:
+        """ How many seconds until the given user's upgrade message can be clicked again """
+        delta = datetime.utcnow() - self.get_upgrade_refresh_time(user_id)
+        return max(0.0, cooldown - delta.total_seconds())
+
+    def get_upgrade_refresh_time(self, user_id: int) -> datetime:
+        """ Timestamp of when the upgrade refresh was last clicked by the given user """
+        return datetime.fromisoformat(self._data['upgrade_refresh_times'].get(str(user_id), _1970))
+
+    def set_upgrade_refresh_time(self, user_id: int, timestamp: datetime = None) -> datetime:
+        """ Set the timestamp of when the upgrade refresh button was last clicked by the given user """
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+        self._data['upgrade_refresh_times'][str(user_id)] = timestamp.isoformat()
+        return timestamp
 
     # --- Cookie counts --- #
 

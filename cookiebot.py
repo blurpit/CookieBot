@@ -272,10 +272,14 @@ class Shop(d.ui.View):
     async def refresh(self, interaction: d.Interaction, button: d.ui.Button):
         async with bot.db:
             owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
-        if owner_id == interaction.user.id:
+            cooldown = bot.db.get_upgrade_refresh_cooldown_remaining(REFRESH_COOLDOWN, owner_id)
+            if cooldown == 0:
+                bot.db.set_upgrade_refresh_time(owner_id)
+
+        if cooldown == 0 and owner_id == interaction.user.id:
             msg = await make_upgrades_message(interaction.user)
             await interaction.message.edit(**msg)
-        await interaction.response.defer()
+            await interaction.response.defer()
 
 class UpgradeSelect(d.ui.Select):
     def __init__(self, options: list[d.SelectOption]):

@@ -12,6 +12,8 @@ COOKIE_UPDATE_RATE = 5
 DISCORD_UPDATE_RATE = 30
 # Cookie button cooldown
 COOKIE_COOLDOWN = 60
+# Upgrades refresh button cooldown
+REFRESH_COOLDOWN = 120
 # Range of cookies obtainable from the button
 COOKIE_RANGE = (1, COOKIE_COOLDOWN * 3 * 2)
 # Percentage of cookies stolen when blue shelled
