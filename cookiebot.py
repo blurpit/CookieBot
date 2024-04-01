@@ -3,11 +3,13 @@ from datetime import datetime
 from fractions import Fraction
 from io import BytesIO
 from logging.handlers import TimedRotatingFileHandler
-from typing import Optional
+from typing import Union
 
 import discord as d
-from discord import User
+from discord import Thread, User
+from discord.abc import PrivateChannel
 from discord.ext import tasks
+from discord.guild import GuildChannel
 
 from config import *
 from database import Database
@@ -82,6 +84,12 @@ class CookieBot(d.Client):
             return user
         return await self.fetch_user(id)
 
+    async def get_channel(self, id: int, /) -> Union[GuildChannel, Thread, PrivateChannel]:
+        channel = super().get_channel(id)
+        if channel:
+            return channel
+        return await self.fetch_channel(id)
+
     async def set_clicker_message(self, msg: d.Message):
         async with self.db:
             self.db.set_clicker_message_id(msg.id)
@@ -100,7 +108,7 @@ class CookieBot(d.Client):
 
         if msg_id is not None:
             try:
-                channel = bot.get_channel(channel_id)
+                channel = await self.get_channel(channel_id)
                 self.message = await channel.fetch_message(msg_id)
                 self.clicker_message_updater.start()
                 log.info(f'Initialized cookie message {msg_id}')
@@ -570,7 +578,7 @@ async def clicker(interaction: d.Interaction, channel_id: str):
     """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
     try:
         channel_id = int(channel_id)
-        channel = bot.get_channel(channel_id)
+        channel = await bot.get_channel(channel_id)
     except ValueError:
         channel = None
 
