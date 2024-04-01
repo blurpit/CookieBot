@@ -270,13 +270,14 @@ class Shop(d.ui.View):
 
     @d.ui.button(label='Refresh', style=d.ButtonStyle.gray, emoji='🔄', row=1)
     async def refresh(self, interaction: d.Interaction, button: d.ui.Button):
+        user_id = interaction.user.id
         async with bot.db:
             owner_id = bot.db.get_upgrade_message_owner_id(interaction.message.id)
-            cooldown = bot.db.get_upgrade_refresh_cooldown_remaining(REFRESH_COOLDOWN, owner_id)
+            cooldown = bot.db.get_upgrade_refresh_cooldown_remaining(REFRESH_COOLDOWN, user_id)
             if cooldown == 0:
-                bot.db.set_upgrade_refresh_time(owner_id)
+                bot.db.set_upgrade_refresh_time(user_id)
 
-        if cooldown == 0 and owner_id == interaction.user.id:
+        if cooldown == 0 and owner_id == user_id:
             msg = await make_upgrades_message(interaction.user)
             await interaction.message.edit(**msg)
             await interaction.response.defer()
