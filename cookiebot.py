@@ -543,7 +543,7 @@ async def jar(interaction: d.Interaction):
         cookies = bot.db.get_cookies(interaction.user.id)
 
     if cookies < 0:
-        msg = f"{interaction.user.mention} YOU OWE ME COOKIE! GIVE OR ill be sad >:("
+        msg = f"{interaction.user.mention} Me no believe it! You eat more cookie than you have? How?!"
     elif cookies == 0:
         msg = f"{interaction.user.mention} no have any cookie!"
     elif cookies < 1000:
