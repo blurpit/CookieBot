@@ -66,12 +66,20 @@ SWINDLE_QUOTES = [
     "<:blueshell:1222371607784198215> {a} will surely miss the **{n}** cookies that {b} just took!",
     "<:blueshell:1222371607784198215> Cookie monster say stealing cookie is wrong. {b}, apologize to {a} for taking **{n}** cookies!",
     "<:blueshell:1222371607784198215> {a} gave away **{n}** cookies! {b} was very persuasive.",
-    "<:blueshell:1222371607784198215> {b} used **swindle**! It's super effective! {a} fainted and lost **{n}** cookies."
+    "<:blueshell:1222371607784198215> {b} used **swindle**! It's super effective! {a} fainted and lost **{n}** cookies.",
+    "<:blueshell:1222371607784198215> Swiper no swiping! Oh, wrong show. Anyway {b} stole **{n}** cookies from {a}.",
+    "<:blueshell:1222371607784198215> {b} hit {a} with a Blue Shell! **{n}** cookies were stolen.",
+    "<:blueshell:1222371607784198215> This just in: A local thief by the name of {b} is on the loose after stealing **{n}** cookies from {a}!",
+    "<:blueshell:1222371607784198215> A Blue Shell hits {a}! Will {b} get away with the **{n}** cookies they stole? Find out next episode...",
+    "<:blueshell:1222371607784198215> It seems {a} forgot to put their name on their cookie jar. {b} helped themselves to **{n}** cookies.",
+    "<:blueshell:1222371607784198215> Incredible! A direct hit by {b}! **{n}** cookies have been stolen from {a}! Can they recover?",
+    "<:blueshell:1222371607784198215> {a} fell for a phishing scam and wired **{n}** cookies directly into {b}'s account!",
+    "<:blueshell:1222371607784198215> **{n}** of {a}'s cookies have been stolen and are currently being sold on the dark web- Wait, it seems they have just been purchased by {b} for the price of 1 Blue Shell!",
 ]
 SWINDLE_BACKFIRE_QUOTES = [
     "<:blueshell:1222371607784198215> {a} tried to swindle from themselves and lost **{n}** cookies! Luckily, {b} was there to pick them up.",
     "<:blueshell:1222371607784198215> {a} used **swindle**! It hurt itself in its confusion! {b} gained **{n}** cookies.",
-    "<:blueshell:1222371607784198215> {a} hit themselves with a blue shell and gave **{n}** cookies to {b}!",
+    "<:blueshell:1222371607784198215> {a} hit themselves with a Blue Shell and gave **{n}** cookies to {b}!",
 ]
 
 CM_VIDEOS = [
