@@ -3,7 +3,7 @@ import logging
 from discord import Object
 
 # Discord guilds
-GUILD = Object(913924123405729812)
+GUILD = Object(687146032416555047)
 DEV_GUILD = Object(913924123405729812)
 
 # How fast cookie counts are updated in the db
