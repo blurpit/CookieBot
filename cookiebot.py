@@ -3,13 +3,10 @@ from datetime import datetime
 from fractions import Fraction
 from io import BytesIO
 from logging.handlers import TimedRotatingFileHandler
-from typing import Union
 
 import discord as d
-from discord import Thread, User
-from discord.abc import PrivateChannel
+from discord import User
 from discord.ext import tasks
-from discord.guild import GuildChannel
 
 from config import *
 from database import Database
@@ -84,7 +81,7 @@ class CookieBot(d.Client):
             return user
         return await self.fetch_user(id)
 
-    async def get_channel(self, id: int, /) -> Union[GuildChannel, Thread, PrivateChannel]:
+    async def get_channel(self, id: int, /) -> d.TextChannel:
         channel = super().get_channel(id)
         if channel:
             return channel
