@@ -564,7 +564,7 @@ async def progress(interaction: d.Interaction):
 
 # --- Dev commands --- #
 
-@bot.tree.command()
+@bot.tree.command(guild=DEV_GUILD)
 @catch_errors
 async def clicker(interaction: d.Interaction, channel_id: str):
     """ [Dev] send a new clicker message to the given channel ID. Old clicker messages will stop being updated """
